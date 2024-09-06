@@ -1,13 +1,16 @@
-import Login from "./components/login";
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Login from "./pages/login";
+import HomePage from "./pages/homePage";
 
 function App() {
-  return (
-    <body className="flex items-center justify-center min-h-screen bg-gray-100">
-      <div className="w-full max-w-md bg-white rounded-lg shadow-md p-6">
-        <Login />
-      </div>
-    </body>
-  );
+  return( <Router>
+    <Routes>
+      <Route path="/" element={<Login/>}/>
+      <Route path="/homepage" element={<HomePage/>} />
+    </Routes>
+  </Router>
+  )
 }
 
 export default App;
