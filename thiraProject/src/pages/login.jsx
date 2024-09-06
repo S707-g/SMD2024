@@ -2,7 +2,8 @@ import React from "react";
 
 const Login = () => {
   return (
-    <>
+    <body className="flex items-center justify-center min-h-screen bg-gray-100">
+        <div div className="w-full max-w-md bg-white rounded-lg shadow-md p-6"> 
     <form>
       <header className='text-center font-semibold py-2 text-2xl'>Login</header>
       <div class='mb-4 flex'>
@@ -21,7 +22,8 @@ const Login = () => {
                 </button>
             </div>
         </form>
-        </>
+        </div>
+        </body>
   );
 };
 
