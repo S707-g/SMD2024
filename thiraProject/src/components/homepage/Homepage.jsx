@@ -1,10 +1,13 @@
 import React from "react";
+import Header from "./H-compo/Header";
+import Welcome from "./H-compo/Welcome";
 
 const Homepage = () => {
   return (
-    <body className="flex items-center justify-center min-h-screen">
-      HomePage
-    </body>
+    <div className="flex-col min-h-screen bg-blue-100">
+      <Header />
+      <Welcome />
+    </div>
   );
-}
+};
 export default Homepage;
