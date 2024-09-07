@@ -1,12 +1,13 @@
 import React from "react";
-import Header from "./H-com/Header";
+import Header from "./H-compo/Header";
+import Welcome from "./H-compo/Welcome";
 
 const Homepage = () => {
- 
   return (
-    <body className="flex-col min-h-screjen bg-gray-100">
+    <div className="flex-col min-h-screen bg-blue-100">
       <Header />
-    </body>
+      <Welcome />
+    </div>
   );
 };
 export default Homepage;
