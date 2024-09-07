@@ -1,3 +1,6 @@
+
+config on your Terminal
+
 **** After you clone this code into your folder [ git clone **** ]  ****
 
 1.  cd to project [ cd SMD2024\thiraProject ]
