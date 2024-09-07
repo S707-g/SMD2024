@@ -1,12 +1,12 @@
 import React from "react";
 import { useNavigate } from "react-router-dom"; // use this to navigate to anotherPage
 
-const Loginpage = () => {
+const Login = () => {
   const navigate = useNavigate(); // Initialize the navigate function
 
   const handleLogin = () => {
     // Add any login logic here (e.g., validation)
-    navigate("/homepage"); // Navigate to the HomePage
+    navigate("/feed"); // Navigate to the HomePage
   };
 
   return (
@@ -55,4 +55,4 @@ const Loginpage = () => {
   );
 };
 
-export default Loginpage;
+export default Login;

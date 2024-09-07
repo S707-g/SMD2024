@@ -1,14 +1,16 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Loginpage from "./components/loginpage/LoginPage.jsx";
+import Login from "./components/loginpage/Login.jsx";
+import Feed from "./components/feedpage/Feed.jsx";
 import Homepage from "./components/homepage/HomePage.jsx";
 
 function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Loginpage />} />
-        <Route path="/homepage" element={<Homepage />} />
+        <Route path="/" element={<Homepage />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/feed" element={<Feed />} />
       </Routes>
     </Router>
   );
