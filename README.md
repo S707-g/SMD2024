@@ -1,10 +1,10 @@
 
 config on your Terminal
 
-**** After you clone this code into your folder [ git clone **** ]  ****
+1. **** After you clone this code into your folder [ git clone **** ]  ****
 
-1.  cd to project [ cd SMD2024\thiraProject ]
-2.  try run [ npm run dev ]  if it show
+  cd to project [ cd SMD2024\thiraProject ]
+try run [ npm run dev ]  if it show
    
 >thiraproject@0.0.0 dev
 > vite
@@ -12,3 +12,9 @@ config on your Terminal
 'vite' is not recognized as an internal or external command,
 
 try [ npm init ]   and  [ npm intall] 
+
+
+
+2. **** Create your Branch ****
+
+   When push and commit Pls  commit with your Branch 
