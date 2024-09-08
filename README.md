@@ -11,7 +11,7 @@ try run [ npm run dev ]  if it show
 
 'vite' is not recognized as an internal or external command,
 
-try [ npm init ]   and  [ npm intall] 
+try [ npm install ] 
 
 
 
