@@ -2,6 +2,7 @@ import React from "react";
 import Header from "./H-compo/Header";
 import Welcome from "./H-compo/Welcome";
 import Blog from "./H-compo/Blog";
+import About from "./H-compo/About";
 
 const Homepage = () => {
   return (
@@ -9,6 +10,7 @@ const Homepage = () => {
       <Header />
       <Welcome />
       <Blog />
+      <About />
     </div>
   );
 };
