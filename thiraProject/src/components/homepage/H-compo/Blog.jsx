@@ -4,7 +4,7 @@ const Blog = () => {
   return (
     <section className="flex-col h-screen relative">
       <div className="h-1/6 flex justify-center">
-        <div className="text-7xl font-semibold text-blue-700 w-10/12">
+        <div className="text-6xl font-semibold text-blue-700 w-10/12 pt-10">
           Blog
         </div>
       </div>

@@ -11,7 +11,6 @@ const Feed = () => {
       <div className="flex h-screen divide-x-2 divide-blue-700">
         <SideBarLeft />
         <Tweet />
-        kijuhyyg
         <SideBarRight/>
       </div>
     </body>
