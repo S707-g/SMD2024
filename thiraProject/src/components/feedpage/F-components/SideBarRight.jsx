@@ -1,9 +1,7 @@
-import React from 'react'
+import React from "react";
 
 const SideBarRight = () => {
-  return (
-    <div className='flex w-[50%]'>SideBarRight</div>
-  )
-}
+  return <div className="text-white"></div>;
+};
 
-export default SideBarRight
+export default SideBarRight;
