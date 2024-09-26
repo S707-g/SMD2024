@@ -6,6 +6,7 @@ import { AppointmentProvider } from "./components/feedpage/F-components/feedCont
 import Layout from "./components/layout/Layout.jsx";
 import Profile from "./components/profilePage/Profile.jsx";
 
+
 function App() {
   return (
     <AppointmentProvider>
