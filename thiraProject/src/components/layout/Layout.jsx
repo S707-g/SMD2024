@@ -1,8 +1,8 @@
 import React from "react";
 import { Outlet } from "react-router-dom";
-import NavB from "../feedpage/F-components/NavB";
-import SideBarLeft from "../feedpage/F-components/SideBarLeft";
-import SideBarRight from "../feedpage/F-components/SideBarRight";
+import NavB from "./NavB";
+import SideBarLeft from "./SideBarLeft";
+import SideBarRight from "./SideBarRight";
 
 const Layout = () => {
   return (
