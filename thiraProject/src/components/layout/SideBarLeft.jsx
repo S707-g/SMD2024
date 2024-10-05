@@ -21,7 +21,7 @@ const NavButton = ({ Icon, label }) => (
 
 const SideBarLeft = () => {
   return (
-    <div className="w-[250px] bg-black flex flex-col sticky top-0">
+    <div className="w-[250px] flex flex-col sticky top-0">
       {/* Top Section */}
       <div>
         <NavButton Icon={HomeIcon} label="Home" />

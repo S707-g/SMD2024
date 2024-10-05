@@ -13,19 +13,19 @@ const Layout = () => {
       {/* Main Content Area */}
       <div className="flex-grow flex overflow-hidden">
         {/* Left Sidebar */}
-        <div className="w-[250px] bg-gray-100 flex overflow-auto">
-          <SideBarLeft />
-        </div>
 
         {/* Main Content and Right Sidebar */}
         <div className="flex-grow flex overflow-hidden">
+          <div className="flex overflow-auto bg-gray-950">
+            <SideBarLeft />
+          </div>
           {/* Main Content Area */}
-          <div className="flex-grow overflow-auto">
+          <div className="flex-1 overflow-auto bg-gray-800">
             <Outlet />
           </div>
 
           {/* Right Sidebar */}
-          <div className="w-[250px] bg-black flex flex-col sticky top-0 h-full">
+          <div className="w-[250px] bg-gray-950 flex flex-col sticky top-0 h-full">
             <SideBarRight />
           </div>
         </div>

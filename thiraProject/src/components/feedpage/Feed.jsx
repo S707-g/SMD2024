@@ -42,15 +42,17 @@ const Feed = () => {
   };
 
   return (
-    <div className="flex flex-col w-full">
+    <div className="flex flex-col text-white">
       {/* Button to trigger the post creation */}
-      <Button
-        variant="contained"
-        onClick={handleCreatePost}
-        className="!flex !sticky"
-      >
-        Post here
-      </Button>
+      <div className="flex flex-row p-3 items-center">
+        <div className="mx-4"> Profile </div>
+        <Button
+          onClick={handleCreatePost}
+          className="!rounded-2xl flex-1 !bg-gray-700 !text-white !text-start hover:!bg-gray-600"
+        >
+          Post Here
+        </Button>
+      </div>
 
       {/* Display the post content */}
       <div className="flex flex-col max-w-full ">
@@ -117,7 +119,7 @@ const Feed = () => {
       {/* Modal for creating a post */}
       {showCreatePost && (
         <div
-          className="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center z-50"
+          className="fixed inset-0 bg-gray-900 bg-opacity-70 flex justify-center items-center z-50"
           onClick={closeCreatePost} // Close modal when clicking the background
         >
           <div
