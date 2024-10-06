@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { TextField } from "@mui/material";
 import ImageIcon from "@mui/icons-material/Image";
 
-const CreatePost = ({ textPostContent, closePost, imagePostContent }) => {
+const CreatePost = ({ textPostContent, closePost }) => {
   const [localPostContent, setLocalPostContent] = useState("");
   const [showInputImage, setShowInputImage] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
