@@ -8,7 +8,7 @@ import Logo from "/src/assets/Thira.svg";
 
 const NavB = () => {
   return (
-    <div className="p-3 flex justify-between bg-gray-950 ">
+    <div className="p-3 flex justify-between bg-gray-800 border-b-2 border-gray-500">
       <div className="flex justify-center text white">
         <img src={Logo} alt="Thira" className="h-12 w-auto" />
       </div>
