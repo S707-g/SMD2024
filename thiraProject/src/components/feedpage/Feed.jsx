@@ -2,80 +2,101 @@ import { Button, TextField } from "@mui/material";
 import React, { useState } from "react";
 import CreatePost from "./CreatePost";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
-import FavoriteIcon from "@mui/icons-material/Favorite"; // Filled heart
+import FavoriteIcon from "@mui/icons-material/Favorite";
 import SendIcon from "@mui/icons-material/Send";
+import ModalPost from "./ModalPost";
 
 const Feed = () => {
   const [showCreatePost, setShowCreatePost] = useState(false);
-  const [textPostContent, setTextPostContent] = useState([]); // Text posts
-  const [imagePostContent, setImagePostContent] = useState([]); // Image posts
-  const [showComment, setShowComment] = useState([]); // Comment visibility for each post
-  const [comments, setComments] = useState([]); // Store comments for each post
-  const [commentInput, setCommentInput] = useState([]); // Track comment input for each post
-  const [likesCount, setLikesCount] = useState([]); // Initialize likesCount as an empty array
-  const [liked, setLiked] = useState([]); // Initialize liked as an empty array
+  const [textPostContent, setTextPostContent] = useState([]);
+  const [imagePostContent, setImagePostContent] = useState([]);
+  const [showModalPost, setShowModalPost] = useState(false);
+  const [comments, setComments] = useState([]);
+  const [commentInput, setCommentInput] = useState([]); // Track input for each post's comments
+  const [likesCount, setLikesCount] = useState([]);
+  const [liked, setLiked] = useState([]);
+  const [currentPostIndex, setCurrentPostIndex] = useState(null);
+  const [commentVisibility, setCommentVisibility] = useState([]);
 
-  const handleCreatePost = () => {
-    setShowCreatePost(true);
-  };
-
-  const closeCreatePost = () => {
-    setShowCreatePost(false);
+  const handleCreatePost = () => setShowCreatePost(true);
+  const closeCreatePost = () => setShowCreatePost(false);
+  const closeModalPost = () => {
+    setShowModalPost(false);
+    setCurrentPostIndex(null);
   };
 
   const showCommentPost = (index) => {
-    const updatedShowComment = [...showComment];
-    updatedShowComment[index] = !updatedShowComment[index]; // Toggle comment visibility for specific post
-    setShowComment(updatedShowComment);
+    console.log(`Comment post at index: ${index}`);
+    if (comments[index]?.length > 1) {
+      setCurrentPostIndex(index);
+      setShowModalPost(true);
+    } else {
+      setCommentVisibility((prevVisibility) => {
+        const updatedVisibility = [...prevVisibility];
+        updatedVisibility[index] = !updatedVisibility[index]; // Toggle visibility for the specific index
+        return updatedVisibility;
+      });
+    }
   };
 
-  // Toggle liked state and update the count
+  const toggleCommentVisibility = (index) => {
+    const updatedCommentsVisibility = comments.map((_, i) =>
+      i === index ? !comments[index].show : comments[i].show
+    );
+    setComments((prevComments) =>
+      prevComments.map((comment, i) => ({
+        ...comment,
+        show: updatedCommentsVisibility[i],
+      }))
+    );
+  };
+
   const handleLikedToggle = (index) => {
-    const updatedLiked = [...liked];
-    const updatedLikesCount = [...likesCount];
-
-    updatedLiked[index] = !updatedLiked[index]; // Toggle the like status
-    updatedLikesCount[index] = updatedLiked[index]
-      ? updatedLikesCount[index] + 1 // Increment if liked
-      : updatedLikesCount[index] - 1; // Decrement if unliked
-
-    setLiked(updatedLiked);
-    setLikesCount(updatedLikesCount);
+    setLiked((prevLiked) =>
+      prevLiked.map((status, i) => (i === index ? !status : status))
+    );
+    setLikesCount((prevCounts) =>
+      prevCounts.map((count, i) =>
+        i === index ? count + (liked[index] ? -1 : 1) : count
+      )
+    );
   };
 
-  // Handle adding a comment to a specific post
   const handleComment = (index) => {
-    const newComments = [...comments];
-    const newCommentInput = [...commentInput];
-
-    if (newCommentInput[index]?.trim()) {
-      // If there are already comments, append to that array; otherwise, initialize
-      if (newComments[index]) {
-        newComments[index].push(newCommentInput[index]);
-      } else {
-        newComments[index] = [newCommentInput[index]];
-      }
-
+    if (commentInput[index]?.trim()) {
+      const newComments = [...comments];
+      newComments[index] = [...(newComments[index] || []), commentInput[index]];
       setComments(newComments);
-      newCommentInput[index] = ""; // Clear the input after submission
+
+      // Clear the input for this post after submitting the comment
+      const newCommentInput = [...commentInput];
+      newCommentInput[index] = "";
       setCommentInput(newCommentInput);
     }
   };
 
-  // Update both textPostContent and imagePostContent, and initialize likesCount, liked, showComment, and comments arrays when adding a post
+  const addComment = (postIndex, newComment) => {
+    setComments((prevComments) => {
+      const updatedComments = [...prevComments];
+      updatedComments[postIndex] = [
+        ...(updatedComments[postIndex] || []),
+        newComment,
+      ];
+      return updatedComments;
+    });
+  };
+
   const addNewPost = (newPostContent, newImageContent) => {
-    setTextPostContent((prevContent) => [...prevContent, newPostContent]);
-    setImagePostContent((prevContent) => [...prevContent, newImageContent]);
-    setLikesCount((prevCounts) => [...prevCounts, 0]); // Initialize like count to 0 for the new post
-    setLiked((prevLiked) => [...prevLiked, false]); // Initialize liked status to false for the new post
-    setShowComment((prevShowComment) => [...prevShowComment, false]); // Initialize comment visibility to false for the new post
-    setComments((prevComments) => [...prevComments, []]); // Initialize comments to an empty array for the new post
-    setCommentInput((prevCommentInput) => [...prevCommentInput, ""]); // Initialize the comment input to an empty string for the new post
+    setTextPostContent((prev) => [...prev, newPostContent]);
+    setImagePostContent((prev) => [...prev, newImageContent]);
+    setLikesCount((prev) => [...prev, 0]);
+    setLiked((prev) => [...prev, false]);
+    setComments((prev) => [...prev, []]);
+    setCommentInput((prev) => [...prev, ""]); // Initialize comment input for the new post
   };
 
   return (
     <div className="flex flex-col text-white">
-      {/* Button to trigger the post creation */}
       <div className="flex flex-row p-3 items-center">
         <div className="mx-4">Profile</div>
         <Button
@@ -86,47 +107,36 @@ const Feed = () => {
         </Button>
       </div>
 
-      {/* Display the post content */}
-      <div className="flex flex-col max-w-full gap-5">
+      <div className="flex flex-col-reverse max-w-full gap-5">
         {textPostContent.length > 0 ? (
           textPostContent.map((postData, index) => (
             <div
               key={index}
               className="border border-gray-400 rounded-lg shadow-md p-4 mb-2 bg-gray-800"
-              style={{
-                overflowWrap: "break-word", // Ensure long words wrap
-                wordBreak: "break-word", // Break words if necessary
-              }}
+              style={{ overflowWrap: "break-word", wordBreak: "break-word" }}
             >
               <div className="flex flex-col">
                 <div className="text-lg font-semibold mb-2">Profile</div>
-
-                {/* Display Text Content */}
                 <div className="mb-4 break-words flex">
                   <div className="p-2">{postData}</div>
                 </div>
 
-                {/* Display Image Content */}
                 {imagePostContent[index] && (
                   <div className="mb-4">
                     <img
                       src={URL.createObjectURL(imagePostContent[index])}
-                      alt="Post Image"
+                      alt="Post"
                       className="w-full max-w-full h-auto max-h-96 object-contain"
                     />
                   </div>
                 )}
-                <div className="border-t-2 border-gray-500 p-2 pt-4 ">
-                  {/* Like and Comment buttons */}
-                  <div className="flex   space-x-4 items-end justify-between pb-2">
+
+                <div className="border-t-2 border-gray-500 p-2 pt-4">
+                  <div className="flex space-x-4 items-end justify-between pb-2">
                     <div className="flex flex-row gap-3">
                       {likesCount[index] > 0 && (
                         <span className="items-end flex">
-                          {likesCount[index] !== undefined &&
-                          !isNaN(likesCount[index])
-                            ? likesCount[index]
-                            : 0}{" "}
-                          likes
+                          {likesCount[index] || 0} likes
                         </span>
                       )}
                     </div>
@@ -135,12 +145,12 @@ const Feed = () => {
                       className="cursor-pointer"
                     >
                       {comments[index]?.length > 0 && (
-                        <div>{comments[index]?.length} comments</div>
+                        <div>{comments[index].length} comments</div>
                       )}
                     </div>
                   </div>
 
-                  <div className=" flex flex-row items-center gap-10">
+                  <div className="flex flex-row items-center gap-10">
                     <div
                       onClick={() => handleLikedToggle(index)}
                       className="cursor-pointer hover:text-gray-600 flex items-end"
@@ -151,13 +161,21 @@ const Feed = () => {
                         <FavoriteBorderIcon />
                       )}
                     </div>
-                    <Button>Comment</Button>
+                    <button onClick={() => showCommentPost(index)}>
+                      Comment
+                    </button>
                   </div>
                 </div>
-                {/* Comment section */}
-                {showComment[index] && (
+
+                {commentVisibility[index] && comments[index].length <= 2 && (
                   <div className="flex flex-col gap-3 mt-4 border-t-2 border-gray-600 pt-4">
-                    <div className="flex flex-row gap-3">
+                    {comments[index].map((comment, i) => (
+                      <div key={i} className="bg-gray-700 p-2 rounded-lg mt-2">
+                        <div>Profile</div>
+                        <div className="text-sm py-2">{comment}</div>
+                      </div>
+                    ))}
+                    <div className="flex flex-row gap-3 mt-2">
                       <div>Profile</div>
                       <div className="flex-1 px-5">
                         <TextField
@@ -174,12 +192,8 @@ const Feed = () => {
                             setCommentInput(newCommentInput);
                           }}
                           sx={{
-                            "& .MuiInputBase-root": {
-                              color: "white",
-                            },
-                            "& .MuiInputLabel-root": {
-                              color: "gray",
-                            },
+                            "& .MuiInputBase-root": { color: "white" },
+                            "& .MuiInputLabel-root": { color: "gray" },
                             "& .MuiInputLabel-root.Mui-focused": {
                               color: "white",
                             },
@@ -199,17 +213,6 @@ const Feed = () => {
                         </div>
                       </div>
                     </div>
-
-                    {/* Display existing comments */}
-                    {comments[index] &&
-                      comments[index].map((comment, i) => (
-                        <div
-                          key={i}
-                          className="bg-gray-700 p-2 rounded-lg mt-2"
-                        >
-                          <span className="text-sm">Profile: {comment}</span>
-                        </div>
-                      ))}
                   </div>
                 )}
               </div>
@@ -220,7 +223,6 @@ const Feed = () => {
         )}
       </div>
 
-      {/* Modal for creating a post */}
       {showCreatePost && (
         <div
           className="fixed inset-0 bg-gray-900 bg-opacity-70 flex justify-center items-center z-50"
@@ -239,6 +241,31 @@ const Feed = () => {
             <CreatePost
               textPostContent={(text, image) => addNewPost(text, image)}
               closePost={closeCreatePost}
+            />
+          </div>
+        </div>
+      )}
+
+      {showModalPost && currentPostIndex !== null && (
+        <div
+          className="fixed inset-0 bg-gray-900 bg-opacity-70 flex justify-center items-center z-50"
+          onClick={closeModalPost}
+        >
+          <div
+            className="bg-gray-800 p-6 rounded-lg shadow-lg relative text-white"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="absolute top-2 right-2 text-gray-400 hover:text-white"
+              onClick={closeModalPost}
+            >
+              ✕
+            </button>
+            <ModalPost
+              post={textPostContent[currentPostIndex]}
+              image={imagePostContent[currentPostIndex]}
+              comments={comments[currentPostIndex]}
+              addComment={(comment) => addComment(currentPostIndex, comment)}
             />
           </div>
         </div>
