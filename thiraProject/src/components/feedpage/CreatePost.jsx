@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { TextField } from "@mui/material";
-import ImageIcon from "@mui/icons-material/Image";
+import ImageIcon from "@mui/icons-material/Image";  
 
 const CreatePost = ({ textPostContent, closePost }) => {
   const [localPostContent, setLocalPostContent] = useState("");
