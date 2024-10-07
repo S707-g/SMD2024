@@ -13,11 +13,11 @@ const ModalPost = ({ post, image, comments, addComment }) => {
   };
 
   return (
-    <div className="p-4 bg-gray-800 rounded-lg shadow-lg text-white w-[800px] max-w-lg">
+    <div className="p-4 bg-gray-800 rounded-lg shadow-lg text-white w-[800px] max-w-lg h-full overflow-y-auto max-h-[90vh]">
       <div className="flex flex-col gap-4">
         {/* Display Post Content */}
         <div className="text-lg font-semibold">Profile</div>
-        <div className="p-2">{post}</div>
+        <div className="p-2 break-words">{post}</div>
 
         {/* Display Image if Available */}
         {image ? (
@@ -32,7 +32,7 @@ const ModalPost = ({ post, image, comments, addComment }) => {
 
         {/* Display Comments */}
         <div
-          className="border-t border-gray-600 pt-4 overflow-y-auto "
+          className="border-t border-gray-600 pt-4 overflow-y-auto"
           style={{ maxHeight: "250px" }}
         >
           <div className="text-sm font-semibold mb-2">Comments:</div>
@@ -51,7 +51,7 @@ const ModalPost = ({ post, image, comments, addComment }) => {
         </div>
 
         {/* Comment Input */}
-        <div className="flex items-center gap-2 mt-2 ">
+        <div className="flex items-center gap-2 mt-2">
           <TextField
             variant="outlined"
             placeholder="Write a comment..."

@@ -5,6 +5,7 @@ import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import SendIcon from "@mui/icons-material/Send";
 import ModalPost from "./ModalPost";
+import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 
 const Feed = () => {
   const [showCreatePost, setShowCreatePost] = useState(false);
@@ -162,7 +163,10 @@ const Feed = () => {
                       )}
                     </div>
                     <button onClick={() => showCommentPost(index)}>
-                      Comment
+                      <div className="gap-3 flex hover:text-gray-500">
+                        Comment
+                        <ChatBubbleOutlineIcon />
+                      </div>
                     </button>
                   </div>
                 </div>
@@ -170,9 +174,11 @@ const Feed = () => {
                 {commentVisibility[index] && comments[index].length <= 2 && (
                   <div className="flex flex-col gap-3 mt-4 border-t-2 border-gray-600 pt-4">
                     {comments[index].map((comment, i) => (
-                      <div key={i} className="bg-gray-700 p-2 rounded-lg mt-2">
-                        <div>Profile</div>
-                        <div className="text-sm py-2">{comment}</div>
+                      <div key={i} className="bg-gray-700 p-2 rounded-lg mt-2 ">
+                        <div className="px-3">
+                          <div>Profile</div>
+                          <div className="text-sm py-2">{comment}</div>
+                        </div>
                       </div>
                     ))}
                     <div className="flex flex-row gap-3 mt-2">
@@ -208,8 +214,11 @@ const Feed = () => {
                             },
                           }}
                         />
-                        <div className="text-end pt-3">
-                          <SendIcon onClick={() => handleComment(index)} />
+                        <div className="text-end pt-3 ">
+                          <SendIcon
+                            onClick={() => handleComment(index)}
+                            className="cursor-pointer"
+                          />
                         </div>
                       </div>
                     </div>
@@ -261,12 +270,14 @@ const Feed = () => {
             >
               ✕
             </button>
+            <div className="">
             <ModalPost
               post={textPostContent[currentPostIndex]}
               image={imagePostContent[currentPostIndex]}
               comments={comments[currentPostIndex]}
               addComment={(comment) => addComment(currentPostIndex, comment)}
             />
+            </div>
           </div>
         </div>
       )}
