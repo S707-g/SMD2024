@@ -7,33 +7,50 @@ import {
   getDoc,
   deleteDoc,
   updateDoc,
+  query, 
+  where
 } from "firebase/firestore";
+import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
 import db from "../database/FirebaseConfig";
+
+const auth = getAuth();
 
 const useUser = () => {
   const [users, setUsers] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Fetch all users
+  // Listen for authentication state changes
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const querySnapshot = await getDocs(collection(db, "users"));
-        const userList = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setUsers(userList);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Fetch authenticated user's data
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (currentUser) {
+        setLoading(true);
+        try {
+          const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+          if (userDoc.exists()) {
+            setUsers([{ id: userDoc.id, ...userDoc.data() }]);
+          }
+        } catch (err) {
+          setError(err.message);
+        } finally {
+          setLoading(false);
+        }
       }
     };
 
-    fetchUsers();
-  }, []);
+    fetchUserData();
+  }, [currentUser]);
 
   // Add a new user
   const addUser = async (newUser) => {
@@ -86,14 +103,45 @@ const useUser = () => {
     }
   };
 
+  // Sign out the current user
+  const signOutUser = async () => {
+    try {
+      await signOut(auth);
+      setCurrentUser(null);
+      setUsers([]); // Clear users data on sign out
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const getUserByUsername = async (username) => {
+    try {
+      const q = query(collection(db, "users"), where("username", "==", username));
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        const userDoc = querySnapshot.docs[0];
+        return { id: userDoc.id, ...userDoc.data() };
+      } else {
+        throw new Error("No user with that username found!");
+      }
+    } catch (err) {
+      setError(err.message);
+      return null;
+    }
+  };
+
   return {
     users,
+    currentUser,
     loading,
     error,
     addUser,
     getUser,
     deleteUser,
     updateUser,
+    signOutUser,
+    getUserByUsername
   };
 };
 

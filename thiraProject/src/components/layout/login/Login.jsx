@@ -1,10 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { TextField, Button } from "@mui/material";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import db from "../../../database/FirebaseConfig";
 import useUser from "../../../hooks/useUser";
 
-const Login = () => {
+const Login = ({ onSuccess }) => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -13,6 +13,15 @@ const Login = () => {
   const [signUpError, setSignUpError] = useState("");
 
   const { addUser, loading, error } = useUser();
+
+  useEffect(() => {
+    // Reset all fields and errors when the component mounts or remounts
+    setUsername("");
+    setPassword("");
+    setConfirmPassword("");
+    setSignInError("");
+    setSignUpError("");
+  }, []); // Empty dependency array to run only on mount
 
   const validateSignUp = () => {
     if (!username || !password || !confirmPassword) {
@@ -41,6 +50,7 @@ const Login = () => {
       const querySnapshot = await getDocs(q);
       if (!querySnapshot.empty) {
         console.log("User signed in successfully");
+        onSuccess(); // Notify parent component of successful sign-in
       } else {
         setSignInError("Incorrect username or password.");
       }
@@ -74,7 +84,6 @@ const Login = () => {
         setUsername("");
         setPassword("");
         setConfirmPassword("");
-
         setIsSignUp(false);
       }
     } catch (err) {
@@ -83,7 +92,6 @@ const Login = () => {
     }
   };
 
-  // Reset fields and errors when switching form mode
   const toggleFormMode = () => {
     setIsSignUp(!isSignUp);
     setUsername("");
@@ -109,6 +117,7 @@ const Login = () => {
           onChange={(e) => setUsername(e.target.value)}
           InputLabelProps={{ style: { color: "white" } }}
           InputProps={{ style: { color: "white" } }}
+          autoComplete="off"
         />
         <TextField
           label="Password"
@@ -120,6 +129,7 @@ const Login = () => {
           onChange={(e) => setPassword(e.target.value)}
           InputLabelProps={{ style: { color: "white" } }}
           InputProps={{ style: { color: "white" } }}
+          autoComplete="new-password"
         />
         {isSignUp && (
           <TextField
