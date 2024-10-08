@@ -8,7 +8,6 @@ import {
   deleteDoc,
   updateDoc,
 } from "firebase/firestore";
-
 import db from "../database/FirebaseConfig";
 
 const useUser = () => {
