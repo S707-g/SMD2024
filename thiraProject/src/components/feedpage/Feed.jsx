@@ -1,11 +1,12 @@
 import { Button, TextField } from "@mui/material";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import CreatePost from "./CreatePost";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import SendIcon from "@mui/icons-material/Send";
 import ModalPost from "./ModalPost";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
+import Login from "../layout/login/Login";
 
 const Feed = () => {
   const [showCreatePost, setShowCreatePost] = useState(false);
@@ -13,43 +14,46 @@ const Feed = () => {
   const [imagePostContent, setImagePostContent] = useState([]);
   const [showModalPost, setShowModalPost] = useState(false);
   const [comments, setComments] = useState([]);
-  const [commentInput, setCommentInput] = useState([]); // Track input for each post's comments
+  const [commentInput, setCommentInput] = useState([]);
   const [likesCount, setLikesCount] = useState([]);
   const [liked, setLiked] = useState([]);
   const [currentPostIndex, setCurrentPostIndex] = useState(null);
   const [commentVisibility, setCommentVisibility] = useState([]);
+  const [modalLogin, setModalLogin] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  const handleCreatePost = () => setShowCreatePost(true);
+  // Check authentication status on mount
+  useEffect(() => {
+    const auth = localStorage.getItem("auth");
+    setIsAuthenticated(!!auth);
+  }, []);
+
+  const handleCreatePost = () => {
+    if (isAuthenticated) {
+      setShowCreatePost(true);
+    } else {
+      setModalLogin(true);
+    }
+  };
+
   const closeCreatePost = () => setShowCreatePost(false);
+  const closeModalLogin = () => setModalLogin(false);
   const closeModalPost = () => {
     setShowModalPost(false);
     setCurrentPostIndex(null);
   };
 
   const showCommentPost = (index) => {
-    console.log(`Comment post at index: ${index}`);
     if (comments[index]?.length > 1) {
       setCurrentPostIndex(index);
       setShowModalPost(true);
     } else {
       setCommentVisibility((prevVisibility) => {
         const updatedVisibility = [...prevVisibility];
-        updatedVisibility[index] = !updatedVisibility[index]; // Toggle visibility for the specific index
+        updatedVisibility[index] = !updatedVisibility[index];
         return updatedVisibility;
       });
     }
-  };
-
-  const toggleCommentVisibility = (index) => {
-    const updatedCommentsVisibility = comments.map((_, i) =>
-      i === index ? !comments[index].show : comments[i].show
-    );
-    setComments((prevComments) =>
-      prevComments.map((comment, i) => ({
-        ...comment,
-        show: updatedCommentsVisibility[i],
-      }))
-    );
   };
 
   const handleLikedToggle = (index) => {
@@ -69,7 +73,6 @@ const Feed = () => {
       newComments[index] = [...(newComments[index] || []), commentInput[index]];
       setComments(newComments);
 
-      // Clear the input for this post after submitting the comment
       const newCommentInput = [...commentInput];
       newCommentInput[index] = "";
       setCommentInput(newCommentInput);
@@ -93,7 +96,7 @@ const Feed = () => {
     setLikesCount((prev) => [...prev, 0]);
     setLiked((prev) => [...prev, false]);
     setComments((prev) => [...prev, []]);
-    setCommentInput((prev) => [...prev, ""]); // Initialize comment input for the new post
+    setCommentInput((prev) => [...prev, ""]);
   };
 
   return (
@@ -174,7 +177,7 @@ const Feed = () => {
                 {commentVisibility[index] && comments[index].length <= 2 && (
                   <div className="flex flex-col gap-3 mt-4 border-t-2 border-gray-600 pt-4">
                     {comments[index].map((comment, i) => (
-                      <div key={i} className="bg-gray-700 p-2 rounded-lg mt-2 ">
+                      <div key={i} className="bg-gray-700 p-2 rounded-lg mt-2">
                         <div className="px-3">
                           <div>Profile</div>
                           <div className="text-sm py-2">{comment}</div>
@@ -214,7 +217,7 @@ const Feed = () => {
                             },
                           }}
                         />
-                        <div className="text-end pt-3 ">
+                        <div className="text-end pt-3">
                           <SendIcon
                             onClick={() => handleComment(index)}
                             className="cursor-pointer"
@@ -255,6 +258,33 @@ const Feed = () => {
         </div>
       )}
 
+      {modalLogin && (
+        <div
+          className="fixed inset-0 bg-gray-900 bg-opacity-70 flex justify-center items-center z-50"
+          onClick={closeModalLogin}
+        >
+          <div
+            className="bg-gray-800 p-6 rounded-lg shadow-lg relative text-white"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="absolute top-2 right-2 text-gray-400 hover:text-white"
+              onClick={closeModalLogin}
+            >
+              ✕
+            </button>
+            <Login
+              onSuccess={() => {
+                setIsAuthenticated(true);
+                localStorage.setItem("auth", "true");
+                setModalLogin(false);
+                setShowCreatePost(true); // Immediately open the CreatePost modal after login
+              }}
+            />
+          </div>
+        </div>
+      )}
+
       {showModalPost && currentPostIndex !== null && (
         <div
           className="fixed inset-0 bg-gray-900 bg-opacity-70 flex justify-center items-center z-50"
@@ -270,14 +300,12 @@ const Feed = () => {
             >
               ✕
             </button>
-            <div className="">
             <ModalPost
               post={textPostContent[currentPostIndex]}
               image={imagePostContent[currentPostIndex]}
               comments={comments[currentPostIndex]}
               addComment={(comment) => addComment(currentPostIndex, comment)}
             />
-            </div>
           </div>
         </div>
       )}
