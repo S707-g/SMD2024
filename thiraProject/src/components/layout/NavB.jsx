@@ -1,12 +1,23 @@
-import React from "react";
+import React, { useState } from "react";
 import SearchIcon from "@mui/icons-material/Search";
 import { Button } from "@mui/material";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import AddIcon from "@mui/icons-material/Add";
 import NotificationsNoneRoundedIcon from "@mui/icons-material/NotificationsNoneRounded";
 import Logo from "/src/assets/Thira.svg";
+import Login from "./login/Login";
 
 const NavB = () => {
+  const [modalLogin, setModalLogin] = useState(false);
+
+  const handleModalLogin = () => {
+    setModalLogin(true);
+  };
+
+  const closeModalLogin = () => {
+    setModalLogin(false);
+  };
+
   return (
     <div className="p-3 flex justify-between bg-gray-800 border-b-2 border-gray-500">
       <div className="flex justify-center text white">
@@ -37,10 +48,32 @@ const NavB = () => {
           <NotificationsNoneRoundedIcon />
         </Button>
 
-        <Button variant="text" className="!text-white !rounded-full">
+        <Button
+          variant="text"
+          className="!text-white !rounded-full"
+          onClick={handleModalLogin}
+        >
           <AccountCircleIcon />
         </Button>
       </div>
+      {modalLogin && (
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-70 flex justify-center items-center z-50">
+          <div
+            className="bg-gray-800 p-6 rounded-lg shadow-lg relative text-white"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="absolute top-2 right-2 text-gray-400 hover:text-white"
+              onClick={closeModalLogin}
+            >
+              ✕
+            </button>
+            <div>
+              <Login />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

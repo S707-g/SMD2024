@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { TextField } from "@mui/material";
-import ImageIcon from "@mui/icons-material/Image";  
+import ImageIcon from "@mui/icons-material/Image";
 
 const CreatePost = ({ textPostContent, closePost }) => {
   const [localPostContent, setLocalPostContent] = useState("");
@@ -54,12 +54,7 @@ const CreatePost = ({ textPostContent, closePost }) => {
         />
         <div>
           <div className="font-semibold">User Name</div>
-          <div className="text-sm text-gray-500">
-            <select className="text-sm bg-transparent focus:outline-none">
-              <option value="public">Public</option>
-              <option value="friends">Friends</option>
-            </select>
-          </div>
+          <div className="text-sm text-gray-500"></div>
         </div>
       </div>
 
