@@ -12,21 +12,29 @@ import AuthContext from "../../context/AuthContext";
 const NavB = () => {
   const { isAuthenticated, login, username } = useContext(AuthContext); // Assuming `username` is available in AuthContext
   const [modalLogin, setModalLogin] = useState(false);
-  const navigate = useNavigate();
+  const accountNavigate = useNavigate();
+  const homeNavigate = useNavigate();
 
   const handleAccountClick = () => {
     if (isAuthenticated && username) {
-      navigate(`/profile/${username}`);
+      accountNavigate(`/profile/${username}`);
     } else {
       setModalLogin(true);
     }
+  };
+
+  const handleLogoClick = () => {
+    homeNavigate(`/`);
   };
 
   const closeModalLogin = () => setModalLogin(false);
 
   return (
     <div className="p-3 flex justify-between bg-gray-800 border-b-2 border-gray-500">
-      <div className="flex justify-center text-white">
+      <div
+        className="flex justify-center text-white cursor-pointer"
+        onClick={handleLogoClick}
+      >
         <img src={Logo} alt="Thira Logo" className="h-12 w-auto" />
       </div>
 
