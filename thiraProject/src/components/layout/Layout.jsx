@@ -16,7 +16,7 @@ const Layout = () => {
 
         {/* Main Content and Right Sidebar */}
         <div className="flex-grow flex overflow-hidden">
-          <div className="flex overflow-auto bg-gray-900">
+          <div className="flex overflow-auto bg-gray-900 z-10">
             <SideBarLeft />
           </div>
           {/* Main Content Area */}

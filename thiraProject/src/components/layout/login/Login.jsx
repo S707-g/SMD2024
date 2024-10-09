@@ -15,13 +15,13 @@ const Login = ({ onSuccess }) => {
   const { addUser, loading, error } = useUser();
 
   useEffect(() => {
-    // Reset all fields and errors when the component mounts or remounts
+    // Reset all fields and errors on component mount or remount
     setUsername("");
     setPassword("");
     setConfirmPassword("");
     setSignInError("");
     setSignUpError("");
-  }, []); // Empty dependency array to run only on mount
+  }, []);
 
   const validateSignUp = () => {
     if (!username || !password || !confirmPassword) {
@@ -50,7 +50,8 @@ const Login = ({ onSuccess }) => {
       const querySnapshot = await getDocs(q);
       if (!querySnapshot.empty) {
         console.log("User signed in successfully");
-        onSuccess(); // Notify parent component of successful sign-in
+        const userData = querySnapshot.docs[0].data(); // Get user data from Firestore
+        onSuccess({ username: userData.username }); // Pass user data to the parent
       } else {
         setSignInError("Incorrect username or password.");
       }
@@ -81,6 +82,7 @@ const Login = ({ onSuccess }) => {
         await addUser(newUser);
         console.log("User signed up:", newUser);
 
+        // Clear fields and switch to Sign In mode after successful sign-up
         setUsername("");
         setPassword("");
         setConfirmPassword("");
