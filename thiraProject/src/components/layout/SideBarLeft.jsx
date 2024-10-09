@@ -6,11 +6,16 @@ import BookmarkIcon from "@mui/icons-material/Bookmark";
 import SendIcon from "@mui/icons-material/Send";
 import ExitToAppIcon from "@mui/icons-material/ExitToApp";
 import AuthContext from "../../context/AuthContext"; // Adjust the path based on your file structure
+import { Navigate, useNavigate } from "react-router-dom";
 
 const SideBarLeft = ({ onLogout }) => {
-  const { isAuthenticated,logout } = useContext(AuthContext);
+  const { isAuthenticated, logout } = useContext(AuthContext);
   const [modalLogout, setModalLogout] = useState(false);
+  const homeNavigate = useNavigate();
 
+  const handleHomeClick = () => {
+    homeNavigate(`/`);
+  };
 
   const handleModalLogout = () => {
     setModalLogout(true);
@@ -44,7 +49,7 @@ const SideBarLeft = ({ onLogout }) => {
     <div className="w-[250px] flex flex-col sticky top-0">
       {/* Top Section */}
       <div>
-        <NavButton Icon={HomeIcon} label="Home" />
+        <NavButton Icon={HomeIcon} label="Home" onClick={handleHomeClick} />
         <NavButton Icon={PeopleIcon} label="Friends" />
         <NavButton Icon={BookmarkIcon} label="Bookmarks" />
         <NavButton Icon={SendIcon} label="Post" />
