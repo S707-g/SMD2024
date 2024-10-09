@@ -1,33 +1,30 @@
+import React, { useState, useContext } from "react";
 import { Button, TextField } from "@mui/material";
-import React, { useState, useEffect } from "react";
-import CreatePost from "./CreatePost";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import SendIcon from "@mui/icons-material/Send";
-import ModalPost from "./ModalPost";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
+import CreatePost from "./CreatePost";
+import ModalPost from "./ModalPost";
 import Login from "../layout/login/Login";
+import AuthContext from "../../context/AuthContext";
 
 const Feed = () => {
+  const { isAuthenticated, login } = useContext(AuthContext);
   const [showCreatePost, setShowCreatePost] = useState(false);
+  const [showModalPost, setShowModalPost] = useState(false);
+  const [modalLogin, setModalLogin] = useState(false);
+
   const [textPostContent, setTextPostContent] = useState([]);
   const [imagePostContent, setImagePostContent] = useState([]);
-  const [showModalPost, setShowModalPost] = useState(false);
   const [comments, setComments] = useState([]);
   const [commentInput, setCommentInput] = useState([]);
   const [likesCount, setLikesCount] = useState([]);
   const [liked, setLiked] = useState([]);
   const [currentPostIndex, setCurrentPostIndex] = useState(null);
   const [commentVisibility, setCommentVisibility] = useState([]);
-  const [modalLogin, setModalLogin] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Check authentication status on mount
-  useEffect(() => {
-    const auth = localStorage.getItem("auth");
-    setIsAuthenticated(!!auth);
-  }, []);
-
+  // Open CreatePost or Login modal based on authentication status
   const handleCreatePost = () => {
     if (isAuthenticated) {
       setShowCreatePost(true);
@@ -43,6 +40,7 @@ const Feed = () => {
     setCurrentPostIndex(null);
   };
 
+  // Toggle comment visibility for the current post
   const showCommentPost = (index) => {
     if (comments[index]?.length > 1) {
       setCurrentPostIndex(index);
@@ -56,6 +54,7 @@ const Feed = () => {
     }
   };
 
+  // Toggle like status and adjust like count
   const handleLikedToggle = (index) => {
     setLiked((prevLiked) =>
       prevLiked.map((status, i) => (i === index ? !status : status))
@@ -67,6 +66,7 @@ const Feed = () => {
     );
   };
 
+  // Handle adding a new comment to a specific post
   const handleComment = (index) => {
     if (commentInput[index]?.trim()) {
       const newComments = [...comments];
@@ -79,17 +79,7 @@ const Feed = () => {
     }
   };
 
-  const addComment = (postIndex, newComment) => {
-    setComments((prevComments) => {
-      const updatedComments = [...prevComments];
-      updatedComments[postIndex] = [
-        ...(updatedComments[postIndex] || []),
-        newComment,
-      ];
-      return updatedComments;
-    });
-  };
-
+  // Add new post with text and optional image
   const addNewPost = (newPostContent, newImageContent) => {
     setTextPostContent((prev) => [...prev, newPostContent]);
     setImagePostContent((prev) => [...prev, newImageContent]);
@@ -140,7 +130,7 @@ const Feed = () => {
                     <div className="flex flex-row gap-3">
                       {likesCount[index] > 0 && (
                         <span className="items-end flex">
-                          {likesCount[index] || 0} likes
+                          {likesCount[index]} likes
                         </span>
                       )}
                     </div>
@@ -274,10 +264,9 @@ const Feed = () => {
               ✕
             </button>
             <Login
-              onSuccess={() => {
-                setIsAuthenticated(true);
-                localStorage.setItem("auth", "true");
-                setModalLogin(false);
+              onSuccess={(user) => {
+                login(user.username);
+                closeModalLogin();
                 setShowCreatePost(true); // Immediately open the CreatePost modal after login
               }}
             />
