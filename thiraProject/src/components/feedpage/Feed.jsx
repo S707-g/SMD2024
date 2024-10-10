@@ -8,21 +8,16 @@ import CreatePost from "./CreatePost";
 import ModalPost from "./ModalPost";
 import Login from "../layout/login/Login";
 import AuthContext from "../../context/AuthContext";
+import usePost from "../../hooks/usePost";
 
 const Feed = () => {
   const { isAuthenticated, login } = useContext(AuthContext);
+  const { posts, addPost, updatePost, loading, error } = usePost();
+
   const [showCreatePost, setShowCreatePost] = useState(false);
   const [showModalPost, setShowModalPost] = useState(false);
   const [modalLogin, setModalLogin] = useState(false);
-
-  const [textPostContent, setTextPostContent] = useState([]);
-  const [imagePostContent, setImagePostContent] = useState([]);
-  const [comments, setComments] = useState([]);
-  const [commentInput, setCommentInput] = useState([]);
-  const [likesCount, setLikesCount] = useState([]);
-  const [liked, setLiked] = useState([]);
   const [currentPostIndex, setCurrentPostIndex] = useState(null);
-  const [commentVisibility, setCommentVisibility] = useState([]);
 
   // Open CreatePost or Login modal based on authentication status
   const handleCreatePost = () => {
@@ -42,51 +37,35 @@ const Feed = () => {
 
   // Toggle comment visibility for the current post
   const showCommentPost = (index) => {
-    if (comments[index]?.length > 1) {
-      setCurrentPostIndex(index);
-      setShowModalPost(true);
-    } else {
-      setCommentVisibility((prevVisibility) => {
-        const updatedVisibility = [...prevVisibility];
-        updatedVisibility[index] = !updatedVisibility[index];
-        return updatedVisibility;
-      });
-    }
+    setCurrentPostIndex(index);
+    setShowModalPost(true);
   };
 
   // Toggle like status and adjust like count
-  const handleLikedToggle = (index) => {
-    setLiked((prevLiked) =>
-      prevLiked.map((status, i) => (i === index ? !status : status))
-    );
-    setLikesCount((prevCounts) =>
-      prevCounts.map((count, i) =>
-        i === index ? count + (liked[index] ? -1 : 1) : count
-      )
-    );
+  const handleLikedToggle = (postId, isLiked, likesCount) => {
+    const newLikesCount = isLiked ? likesCount - 1 : likesCount + 1;
+    updatePost(postId, { likesCount: newLikesCount, isLiked: !isLiked });
   };
 
   // Handle adding a new comment to a specific post
-  const handleComment = (index) => {
-    if (commentInput[index]?.trim()) {
-      const newComments = [...comments];
-      newComments[index] = [...(newComments[index] || []), commentInput[index]];
-      setComments(newComments);
-
-      const newCommentInput = [...commentInput];
-      newCommentInput[index] = "";
-      setCommentInput(newCommentInput);
+  const handleComment = (postId, commentText) => {
+    const post = posts.find((post) => post.id === postId);
+    if (post && commentText.trim()) {
+      const updatedComments = [...(post.comments || []), commentText];
+      updatePost(postId, { comments: updatedComments });
     }
   };
 
   // Add new post with text and optional image
   const addNewPost = (newPostContent, newImageContent) => {
-    setTextPostContent((prev) => [...prev, newPostContent]);
-    setImagePostContent((prev) => [...prev, newImageContent]);
-    setLikesCount((prev) => [...prev, 0]);
-    setLiked((prev) => [...prev, false]);
-    setComments((prev) => [...prev, []]);
-    setCommentInput((prev) => [...prev, ""]);
+    const newPost = {
+      content: newPostContent,
+      image: newImageContent,
+      comments: [],
+      likesCount: 0,
+      isLiked: false,
+    };
+    addPost(newPost);
   };
 
   return (
@@ -102,23 +81,27 @@ const Feed = () => {
       </div>
 
       <div className="flex flex-col-reverse max-w-full gap-5">
-        {textPostContent.length > 0 ? (
-          textPostContent.map((postData, index) => (
+        {loading ? (
+          <p>Loading...</p>
+        ) : error ? (
+          <p>Error: {error}</p>
+        ) : posts.length > 0 ? (
+          posts.map((post, index) => (
             <div
-              key={index}
+              key={post.id}
               className="border border-gray-400 rounded-lg shadow-md p-4 mb-2 bg-gray-800"
               style={{ overflowWrap: "break-word", wordBreak: "break-word" }}
             >
               <div className="flex flex-col">
                 <div className="text-lg font-semibold mb-2">Profile</div>
                 <div className="mb-4 break-words flex">
-                  <div className="p-2">{postData}</div>
+                  <div className="p-2">{post.content}</div>
                 </div>
 
-                {imagePostContent[index] && (
+                {post.image && (
                   <div className="mb-4">
                     <img
-                      src={URL.createObjectURL(imagePostContent[index])}
+                      src={URL.createObjectURL(post.image)}
                       alt="Post"
                       className="w-full max-w-full h-auto max-h-96 object-contain"
                     />
@@ -128,9 +111,9 @@ const Feed = () => {
                 <div className="border-t-2 border-gray-500 p-2 pt-4">
                   <div className="flex space-x-4 items-end justify-between pb-2">
                     <div className="flex flex-row gap-3">
-                      {likesCount[index] > 0 && (
+                      {post.likesCount > 0 && (
                         <span className="items-end flex">
-                          {likesCount[index]} likes
+                          {post.likesCount} likes
                         </span>
                       )}
                     </div>
@@ -138,18 +121,24 @@ const Feed = () => {
                       onClick={() => showCommentPost(index)}
                       className="cursor-pointer"
                     >
-                      {comments[index]?.length > 0 && (
-                        <div>{comments[index].length} comments</div>
+                      {post.comments?.length > 0 && (
+                        <div>{post.comments.length} comments</div>
                       )}
                     </div>
                   </div>
 
                   <div className="flex flex-row items-center gap-10">
                     <div
-                      onClick={() => handleLikedToggle(index)}
+                      onClick={() =>
+                        handleLikedToggle(
+                          post.id,
+                          post.isLiked,
+                          post.likesCount
+                        )
+                      }
                       className="cursor-pointer hover:text-gray-600 flex items-end"
                     >
-                      {liked[index] ? (
+                      {post.isLiked ? (
                         <FavoriteIcon className="text-red-600" />
                       ) : (
                         <FavoriteBorderIcon />
@@ -163,60 +152,6 @@ const Feed = () => {
                     </button>
                   </div>
                 </div>
-
-                {commentVisibility[index] && comments[index].length <= 2 && (
-                  <div className="flex flex-col gap-3 mt-4 border-t-2 border-gray-600 pt-4">
-                    {comments[index].map((comment, i) => (
-                      <div key={i} className="bg-gray-700 p-2 rounded-lg mt-2">
-                        <div className="px-3">
-                          <div>Profile</div>
-                          <div className="text-sm py-2">{comment}</div>
-                        </div>
-                      </div>
-                    ))}
-                    <div className="flex flex-row gap-3 mt-2">
-                      <div>Profile</div>
-                      <div className="flex-1 px-5">
-                        <TextField
-                          placeholder="Write a comment..."
-                          variant="outlined"
-                          className="!bg-gray-700 !rounded-xl"
-                          value={commentInput[index] || ""}
-                          maxRows={6}
-                          fullWidth
-                          multiline
-                          onChange={(e) => {
-                            const newCommentInput = [...commentInput];
-                            newCommentInput[index] = e.target.value;
-                            setCommentInput(newCommentInput);
-                          }}
-                          sx={{
-                            "& .MuiInputBase-root": { color: "white" },
-                            "& .MuiInputLabel-root": { color: "gray" },
-                            "& .MuiInputLabel-root.Mui-focused": {
-                              color: "white",
-                            },
-                            "& .MuiInput-underline:before": {
-                              borderBottomColor: "white",
-                            },
-                            "& .MuiInput-underline:hover:before": {
-                              borderBottomColor: "white",
-                            },
-                            "& .MuiInput-underline:after": {
-                              borderBottomColor: "white",
-                            },
-                          }}
-                        />
-                        <div className="text-end pt-3">
-                          <SendIcon
-                            onClick={() => handleComment(index)}
-                            className="cursor-pointer"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           ))
@@ -290,10 +225,12 @@ const Feed = () => {
               ✕
             </button>
             <ModalPost
-              post={textPostContent[currentPostIndex]}
-              image={imagePostContent[currentPostIndex]}
-              comments={comments[currentPostIndex]}
-              addComment={(comment) => addComment(currentPostIndex, comment)}
+              post={posts[currentPostIndex]?.content}
+              image={posts[currentPostIndex]?.image}
+              comments={posts[currentPostIndex]?.comments}
+              addComment={(comment) =>
+                handleComment(posts[currentPostIndex].id, comment)
+              }
             />
           </div>
         </div>
