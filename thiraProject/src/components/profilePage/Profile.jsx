@@ -9,23 +9,36 @@ const Profile = () => {
   const { username } = useParams();
   const { getUserByUsername } = useUser();
   const [bio, setBio] = useState();
+  const [url, setUrl] = useState();
 
   useEffect(() => {
     getUserByUsername(username).then((data) => setBio(data));
-  }, [username, getUserByUsername]);
+  }, [username]);
+
+  useEffect(()=>{
+    // Create a new URL object
+    const url = new URL(window.location.href );
+
+    // Get the base URL
+    const baseUrl = url.origin;
+
+    setUrl(baseUrl)
+
+  },[])
 
   return (
+    bio && bio.profile_url.length > 1 ?
     <div className="w-full h-full bg-gray-400 p-3">
       {/* Header Section */}
       <div className="bg-white p-5 rounded-lg flex-col ">
         <div className="flex flex-col sm:flex-row items-center my-5">
           {/* Profile Picture */}
           <div className="px-3">
-            <Avatar
-              src="src/components/img/blank-profile-picture-973460_1280.webp"
-              alt=""
-              sx={{ width: 130, height: 130 }}
-              className="mt-2 sm:mt-0 mx-auto sm:mx-0"
+            <Avatar 
+            alt={username} 
+            src={bio.profile_url} 
+            sx={{ width: 130, height: 130 }}
+            className="mt-2 sm:mt-0 mx-auto sm:mx-0"
             />
           </div>
 
@@ -33,7 +46,7 @@ const Profile = () => {
           <div className="mt-2 sm:mt-0 sm:ml-3 text-center sm:text-left">
             <Typography variant="h5">{username}</Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              Password: {bio?.password}
+              Password: {bio.password}
             </Typography>
           </div>
         </div>
@@ -72,6 +85,10 @@ const Profile = () => {
         </div>
       </div>
     </div>
+    :
+    <>
+      T_T GOT CANT FIND THIS USER
+    </>
   );
 };
 
