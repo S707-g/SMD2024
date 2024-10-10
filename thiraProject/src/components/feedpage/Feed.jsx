@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { Button, TextField } from "@mui/material";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import FavoriteIcon from "@mui/icons-material/Favorite";
@@ -8,13 +8,14 @@ import CreatePost from "./CreatePost";
 import ModalPost from "./ModalPost";
 import Login from "../layout/login/Login";
 import AuthContext from "../../context/AuthContext";
+import { useParams } from "react-router-dom";
+import useUser from "../../hooks/useUser";
 
 const Feed = () => {
-  const { isAuthenticated, login } = useContext(AuthContext);
+  const { isAuthenticated, login, username } = useContext(AuthContext);
   const [showCreatePost, setShowCreatePost] = useState(false);
   const [showModalPost, setShowModalPost] = useState(false);
   const [modalLogin, setModalLogin] = useState(false);
-
   const [textPostContent, setTextPostContent] = useState([]);
   const [imagePostContent, setImagePostContent] = useState([]);
   const [comments, setComments] = useState([]);
@@ -32,6 +33,7 @@ const Feed = () => {
       setModalLogin(true);
     }
   };
+
 
   const closeCreatePost = () => setShowCreatePost(false);
   const closeModalLogin = () => setModalLogin(false);
@@ -92,7 +94,7 @@ const Feed = () => {
   return (
     <div className="flex flex-col text-white">
       <div className="flex flex-row p-3 items-center">
-        <div className="mx-4">Profile</div>
+        <div className="mx-4">{username || "loading.."}</div>
         <Button
           onClick={handleCreatePost}
           className="!rounded-2xl flex-1 !bg-gray-700 !text-white !text-start hover:!bg-gray-600"
