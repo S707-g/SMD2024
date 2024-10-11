@@ -8,8 +8,8 @@ import CreatePost from "./CreatePost";
 import ModalPost from "./ModalPost";
 import Login from "../layout/login/Login";
 import AuthContext from "../../context/AuthContext";
-import { useParams } from "react-router-dom";
 import useUser from "../../hooks/useUser";
+import usePosts from "../../hooks/usePost";
 
 const Feed = () => {
   const { isAuthenticated, login, username } = useContext(AuthContext);
@@ -24,8 +24,12 @@ const Feed = () => {
   const [liked, setLiked] = useState([]);
   const [currentPostIndex, setCurrentPostIndex] = useState(null);
   const [commentVisibility, setCommentVisibility] = useState([]);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [postUsernames, setPostUsernames] = useState([]); // State for usernames per post
 
-  // Open CreatePost or Login modal based on authentication status
+  const { getUserByUsername } = useUser();
+  const { addPost, fetchPosts } = usePosts();
+
   const handleCreatePost = () => {
     if (isAuthenticated) {
       setShowCreatePost(true);
@@ -34,7 +38,6 @@ const Feed = () => {
     }
   };
 
-
   const closeCreatePost = () => setShowCreatePost(false);
   const closeModalLogin = () => setModalLogin(false);
   const closeModalPost = () => {
@@ -42,7 +45,6 @@ const Feed = () => {
     setCurrentPostIndex(null);
   };
 
-  // Toggle comment visibility for the current post
   const showCommentPost = (index) => {
     if (comments[index]?.length > 1) {
       setCurrentPostIndex(index);
@@ -56,7 +58,6 @@ const Feed = () => {
     }
   };
 
-  // Toggle like status and adjust like count
   const handleLikedToggle = (index) => {
     setLiked((prevLiked) =>
       prevLiked.map((status, i) => (i === index ? !status : status))
@@ -68,7 +69,6 @@ const Feed = () => {
     );
   };
 
-  // Handle adding a new comment to a specific post
   const handleComment = (index) => {
     if (commentInput[index]?.trim()) {
       const newComments = [...comments];
@@ -81,20 +81,88 @@ const Feed = () => {
     }
   };
 
-  // Add new post with text and optional image
-  const addNewPost = (newPostContent, newImageContent) => {
+  const addNewPost = async (newPostContent, newImageContent) => {
+    let imageUrl = null;
+
+    if (newImageContent) {
+      imageUrl = await uploadImageToGoogleCloud(newImageContent);
+    }
+
+    const userId = await getUserByUsername(username);
+    const postDetail = {
+      text: newPostContent,
+      userId,
+      img_url: imageUrl,
+      createdAt: new Date(),
+    };
+
+    await addPost(postDetail);
+
     setTextPostContent((prev) => [...prev, newPostContent]);
-    setImagePostContent((prev) => [...prev, newImageContent]);
+    setImagePostContent((prev) => [...prev, imageUrl]);
     setLikesCount((prev) => [...prev, 0]);
     setLiked((prev) => [...prev, false]);
     setComments((prev) => [...prev, []]);
     setCommentInput((prev) => [...prev, ""]);
+    setPostUsernames((prev) => [...prev, username]);
   };
+
+  useEffect(() => {
+    if (isLoaded) return;
+
+    const loadPosts = async () => {
+      try {
+        const data = await fetchPosts();
+        if (data && data.length > 0) {
+          const textPosts = [];
+          const imagePosts = [];
+          const likes = [];
+          const likedStatus = [];
+          const comments = [];
+          const commentInputs = [];
+          const usernames = [];
+
+          for (const post of data) {
+            textPosts.push(post.text);
+            imagePosts.push(post.img_url || ""); // Add a fallback for img_url
+            likes.push(0);
+            likedStatus.push(false);
+            comments.push([]);
+            commentInputs.push("");
+
+            // Fetch username associated with the post
+            const user = await getUserByUsername(post.userId);
+            if (user) {
+              usernames.push(user.username);
+            } else {
+              usernames.push("Unknown User"); // Fallback for missing user
+            }
+          }
+
+          // Update all states at once after processing
+          setTextPostContent(textPosts);
+          setImagePostContent(imagePosts);
+          setLikesCount(likes);
+          setLiked(likedStatus);
+          setComments(comments);
+          setCommentInput(commentInputs);
+          setPostUsernames(usernames);
+          setIsLoaded(true); // Mark as loaded only after data is set
+        }
+      } catch (error) {
+        console.error("Error fetching posts:", error);
+      }
+    };
+
+    loadPosts();
+
+    // Cleanup not needed here since we fetch only on component mount
+  }, [isLoaded]);
 
   return (
     <div className="flex flex-col text-white">
       <div className="flex flex-row p-3 items-center">
-        <div className="mx-4">{username || "loading.."}</div>
+        <div className="mx-4">{username || ""}</div>
         <Button
           onClick={handleCreatePost}
           className="!rounded-2xl flex-1 !bg-gray-700 !text-white !text-start hover:!bg-gray-600"
@@ -112,7 +180,9 @@ const Feed = () => {
               style={{ overflowWrap: "break-word", wordBreak: "break-word" }}
             >
               <div className="flex flex-col">
-                <div className="text-lg font-semibold mb-2">Profile</div>
+                <div className="text-lg font-semibold mb-2">
+                  {postUsernames[index]}
+                </div>
                 <div className="mb-4 break-words flex">
                   <div className="p-2">{postData}</div>
                 </div>
@@ -120,7 +190,7 @@ const Feed = () => {
                 {imagePostContent[index] && (
                   <div className="mb-4">
                     <img
-                      src={URL.createObjectURL(imagePostContent[index])}
+                      src={imagePostContent[index]}
                       alt="Post"
                       className="w-full max-w-full h-auto max-h-96 object-contain"
                     />
@@ -171,13 +241,13 @@ const Feed = () => {
                     {comments[index].map((comment, i) => (
                       <div key={i} className="bg-gray-700 p-2 rounded-lg mt-2">
                         <div className="px-3">
-                          <div>Profile</div>
+                          <div>{username}</div>
                           <div className="text-sm py-2">{comment}</div>
                         </div>
                       </div>
                     ))}
                     <div className="flex flex-row gap-3 mt-2">
-                      <div>Profile</div>
+                      <div>{username}</div>
                       <div className="flex-1 px-5">
                         <TextField
                           placeholder="Write a comment..."
@@ -269,7 +339,7 @@ const Feed = () => {
               onSuccess={(user) => {
                 login(user.username);
                 closeModalLogin();
-                setShowCreatePost(true); // Immediately open the CreatePost modal after login
+                setShowCreatePost(true);
               }}
             />
           </div>

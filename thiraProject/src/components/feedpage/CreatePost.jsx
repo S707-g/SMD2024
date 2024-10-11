@@ -1,12 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { TextField } from "@mui/material";
 import ImageIcon from "@mui/icons-material/Image";
+import AuthContext from "../../context/AuthContext";
 
 const CreatePost = ({ textPostContent, closePost }) => {
   const [localPostContent, setLocalPostContent] = useState("");
   const [showInputImage, setShowInputImage] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState(null);
+  const { username } = useContext(AuthContext);
 
   const handleInputChange = (event) => {
     setLocalPostContent(event.target.value); // Update local input state
@@ -53,7 +55,7 @@ const CreatePost = ({ textPostContent, closePost }) => {
           className="rounded-full"
         />
         <div>
-          <div className="font-semibold">User Name</div>
+          <div className="font-semibold">{username}</div>
           <div className="text-sm text-gray-500"></div>
         </div>
       </div>

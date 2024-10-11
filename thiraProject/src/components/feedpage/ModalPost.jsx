@@ -1,9 +1,12 @@
 import React from "react";
 import { Button, TextField } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
+import { useContext } from "react";
+import AuthContext from "../../context/AuthContext";
 
 const ModalPost = ({ post, image, comments, addComment }) => {
   const [commentInput, setCommentInput] = React.useState("");
+  const { username } = useContext(AuthContext);
 
   const handleCommentSubmit = () => {
     if (commentInput.trim()) {
@@ -16,7 +19,7 @@ const ModalPost = ({ post, image, comments, addComment }) => {
     <div className="p-4 bg-gray-800 rounded-lg shadow-lg text-white w-[800px] max-w-lg h-full overflow-y-auto max-h-[90vh]">
       <div className="flex flex-col gap-4">
         {/* Display Post Content */}
-        <div className="text-lg font-semibold">Profile</div>
+        <div className="text-lg font-semibold">{username}</div>
         <div className="p-2 break-words">{post}</div>
 
         {/* Display Image if Available */}
@@ -40,7 +43,7 @@ const ModalPost = ({ post, image, comments, addComment }) => {
             {comments.length > 0 ? (
               comments.map((comment, index) => (
                 <div key={index} className="bg-gray-700 p-3 rounded-lg mb-2 ">
-                  <div>Profile</div>
+                  <div>{username}</div>
                   <div className="text-sm py-1 break-words">{comment}</div>
                 </div>
               ))
