@@ -7,6 +7,8 @@ import {
   getDoc,
   deleteDoc,
   updateDoc,
+  query,
+  orderBy,
 } from "firebase/firestore";
 import db from "../database/FirebaseConfig";
 
@@ -21,19 +23,18 @@ const usePosts = () => {
   }, []);
 
   const fetchPosts = async () => {
-    setLoading(true);
     try {
-      const querySnapshot = await getDocs(collection(db, "posts"));
+      const postsRef = collection(db, "posts");
+      const q = query(postsRef, orderBy("createdAt", "desc")); // Order by createdAt descending
+      const querySnapshot = await getDocs(q);
       const postsData = querySnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
-      setPosts(postsData);
       return postsData;
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching posts:", error);
+      return [];
     }
   };
 

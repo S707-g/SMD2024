@@ -20,7 +20,7 @@ const Layout = () => {
             <SideBarLeft />
           </div>
           {/* Main Content Area */}
-          <div className="flex-1 overflow-auto bg-gray-900">
+          <div className="flex-1 overflow-auto bg-gray-900 scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-900 px-2 ">
             <Outlet />
           </div>
 
