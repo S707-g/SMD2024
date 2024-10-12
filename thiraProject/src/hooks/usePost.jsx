@@ -29,7 +29,7 @@ const usePosts = () => {
         ...doc.data(),
       }));
       setPosts(postsData);
-      return postsData
+      return postsData;
     } catch (err) {
       setError(err.message);
     } finally {
@@ -98,7 +98,7 @@ const usePosts = () => {
     getPost,
     deletePost,
     updatePost,
-    fetchPosts
+    fetchPosts,
   };
 };
 

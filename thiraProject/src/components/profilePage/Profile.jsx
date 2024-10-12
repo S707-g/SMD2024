@@ -9,36 +9,51 @@ const Profile = () => {
   const { username } = useParams();
   const { getUserByUsername } = useUser();
   const [bio, setBio] = useState();
-  const [url, setUrl] = useState();
 
   useEffect(() => {
-    getUserByUsername(username).then((data) => setBio(data));
-  }, [username]);
+    const fetchUser = async () => {
+      try {
+        const data = await getUserByUsername(username);
+        if (data) {
+          setBio(data);
+        } else {
+          setBio(null); // Explicitly set bio to null if user not found
+        }
+      } catch (error) {
+        console.error("Error fetching user:", error);
+        setBio(null);
+      }
+    };
 
-  useEffect(()=>{
-    // Create a new URL object
-    const url = new URL(window.location.href );
+    fetchUser();
+  }, [username, getUserByUsername]);
 
-    // Get the base URL
-    const baseUrl = url.origin;
+  if (bio === null) {
+    return (
+      <div className="w-full h-full bg-gray-400 p-3">
+        <div className="bg-white p-5 rounded-lg flex-col ">
+          <Typography variant="h5" color="error">
+            T_T Sorry, we couldn't find this user.
+          </Typography>
+        </div>
+      </div>
+    );
+  }
 
-    setUrl(baseUrl)
+  const profileImage = bio?.profile_url || "/profile.webp";
 
-  },[])
-
-  return (
-    bio && bio.profile_url.length > 1 ?
+  return bio && bio.profile_url.length > 1 ? (
     <div className="w-full h-full bg-gray-400 p-3">
       {/* Header Section */}
       <div className="bg-white p-5 rounded-lg flex-col ">
         <div className="flex flex-col sm:flex-row items-center my-5">
           {/* Profile Picture */}
           <div className="px-3">
-            <Avatar 
-            alt={username} 
-            src={bio.profile_url} 
-            sx={{ width: 130, height: 130 }}
-            className="mt-2 sm:mt-0 mx-auto sm:mx-0"
+            <Avatar
+              alt={username}
+              src={profileImage}
+              sx={{ width: 130, height: 130 }}
+              className="mt-2 sm:mt-0 mx-auto sm:mx-0"
             />
           </div>
 
@@ -85,10 +100,8 @@ const Profile = () => {
         </div>
       </div>
     </div>
-    :
-    <>
-      T_T GOT CANT FIND THIS USER
-    </>
+  ) : (
+    <>T_T GOT CANT FIND THIS USER</>
   );
 };
 

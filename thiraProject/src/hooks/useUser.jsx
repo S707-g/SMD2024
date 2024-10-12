@@ -7,8 +7,8 @@ import {
   getDoc,
   deleteDoc,
   updateDoc,
-  query, 
-  where
+  query,
+  where,
 } from "firebase/firestore";
 import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
 import db from "../database/FirebaseConfig";
@@ -116,17 +116,37 @@ const useUser = () => {
 
   const getUserByUsername = async (username) => {
     try {
-      const q = query(collection(db, "users"), where("username", "==", username));
+      const q = query(
+        collection(db, "users"),
+        where("username", "==", username)
+      );
       const querySnapshot = await getDocs(q);
 
       if (!querySnapshot.empty) {
         const userDoc = querySnapshot.docs[0];
         return { id: userDoc.id, ...userDoc.data() };
       } else {
-        throw new Error("No user with that username found!");
+        console.error("No user with that username found!");
+        return null;
       }
     } catch (err) {
-      setError(err.message);
+      console.error("Error fetching user by username:", err);
+      return null;
+    }
+  };
+  const getUserById = async (userId) => {
+    try {
+      const docRef = doc(db, "users", userId);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        return { id: docSnap.id, ...docSnap.data() };
+      } else {
+        console.error(`No user found for userId: ${userId}`);
+        return null;
+      }
+    } catch (err) {
+      console.error("Error fetching user by ID:", err);
       return null;
     }
   };
@@ -141,7 +161,8 @@ const useUser = () => {
     deleteUser,
     updateUser,
     signOutUser,
-    getUserByUsername
+    getUserByUsername,
+    getUserById,
   };
 };
 
