@@ -1,9 +1,11 @@
-import React, { useState, useContext, useEffect } from "react";
+import React, { useState, useContext, useEffect, useRef } from "react";
 import { Button, TextField } from "@mui/material";
+import { Timestamp } from "firebase/firestore";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import SendIcon from "@mui/icons-material/Send";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
+import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
 import CreatePost from "./CreatePost";
 import ModalPost from "./ModalPost";
 import Login from "../layout/login/Login";
@@ -22,12 +24,13 @@ const Feed = () => {
   const [commentInput, setCommentInput] = useState([]);
   const [likesCount, setLikesCount] = useState([]);
   const [liked, setLiked] = useState([]);
+  const [moreOptionsVisible, setMoreOptionsVisible] = useState({});
   const [currentPostIndex, setCurrentPostIndex] = useState(null);
   const [commentVisibility, setCommentVisibility] = useState([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [postUsernames, setPostUsernames] = useState([]); // State for usernames per post
 
-  const { getUserByUsername } = useUser();
+  const { getUserByUsername, getUserById } = useUser();
   const { addPost, fetchPosts } = usePosts();
 
   const handleCreatePost = () => {
@@ -81,31 +84,41 @@ const Feed = () => {
     }
   };
 
-  const addNewPost = async (newPostContent, newImageContent) => {
-    let imageUrl = null;
+  const toggleMoreOptions = (index) => {
+    setMoreOptionsVisible((prev) => {
+      const newVisible = { [index]: !prev[index] };
+      return newVisible;
+    });
+  };
 
-    if (newImageContent) {
-      imageUrl = await uploadImageToGoogleCloud(newImageContent);
-    }
+  const handleEditPost = (index) => {
+    // Implement edit functionality
+    console.log(`Edit post at index: ${index}`);
+  };
 
-    const userId = await getUserByUsername(username);
-    const postDetail = {
-      text: newPostContent,
-      userId,
-      img_url: imageUrl,
-      createdAt: new Date(),
+  const handleDeletePost = (index) => {
+    // Implement delete functionality
+    console.log(`Delete post at index: ${index}`);
+  };
+
+  const handleHidePost = (index) => {
+    // Implement hide functionality
+    console.log(`Hide post at index: ${index}`);
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // If click is outside the options menu, close the menu
+      if (!event.target.closest(".options-container")) {
+        setMoreOptionsVisible({});
+      }
     };
 
-    await addPost(postDetail);
-
-    setTextPostContent((prev) => [...prev, newPostContent]);
-    setImagePostContent((prev) => [...prev, imageUrl]);
-    setLikesCount((prev) => [...prev, 0]);
-    setLiked((prev) => [...prev, false]);
-    setComments((prev) => [...prev, []]);
-    setCommentInput((prev) => [...prev, ""]);
-    setPostUsernames((prev) => [...prev, username]);
-  };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   useEffect(() => {
     if (isLoaded) return;
@@ -124,22 +137,24 @@ const Feed = () => {
 
           for (const post of data) {
             textPosts.push(post.text);
-            imagePosts.push(post.img_url || ""); // Add a fallback for img_url
+            imagePosts.push(post.img_url || "");
             likes.push(0);
             likedStatus.push(false);
             comments.push([]);
             commentInputs.push("");
 
-            // Fetch username associated with the post
-            const user = await getUserByUsername(post.userId);
-            if (user) {
-              usernames.push(user.username);
+            if (post.userId) {
+              const user = await getUserById(post.userId);
+              if (user) {
+                usernames.push(user.username);
+              } else {
+                usernames.push("Unknown User");
+              }
             } else {
-              usernames.push("Unknown User"); // Fallback for missing user
+              usernames.push("Unknown User");
             }
           }
 
-          // Update all states at once after processing
           setTextPostContent(textPosts);
           setImagePostContent(imagePosts);
           setLikesCount(likes);
@@ -147,7 +162,9 @@ const Feed = () => {
           setComments(comments);
           setCommentInput(commentInputs);
           setPostUsernames(usernames);
-          setIsLoaded(true); // Mark as loaded only after data is set
+          setIsLoaded(true);
+        } else {
+          console.error("No posts found");
         }
       } catch (error) {
         console.error("Error fetching posts:", error);
@@ -155,9 +172,41 @@ const Feed = () => {
     };
 
     loadPosts();
-
-    // Cleanup not needed here since we fetch only on component mount
   }, [isLoaded]);
+
+  const addNewPost = async (newPostContent, newImageContent) => {
+    let imageUrl = null;
+
+    if (newImageContent) {
+      imageUrl = await uploadImageToGoogleCloud(newImageContent);
+    }
+
+    // Use username to get userId
+    const userDoc = await getUserByUsername(username);
+    const userId = userDoc ? userDoc.id : null;
+
+    if (!userId) {
+      console.error("User ID not found for username:", username);
+      return;
+    }
+
+    const postDetail = {
+      text: newPostContent,
+      userId,
+      img_url: imageUrl,
+      createdAt: Timestamp.now(),
+    };
+
+    await addPost(postDetail);
+
+    setTextPostContent((prev) => [newPostContent, ...prev]);
+    setImagePostContent((prev) => [imageUrl, ...prev]);
+    setLikesCount((prev) => [0, ...prev]);
+    setLiked((prev) => [false, ...prev]);
+    setComments((prev) => [[], ...prev]);
+    setCommentInput((prev) => ["", ...prev]);
+    setPostUsernames((prev) => [username, ...prev]);
+  };
 
   return (
     <div className="flex flex-col text-white">
@@ -171,7 +220,7 @@ const Feed = () => {
         </Button>
       </div>
 
-      <div className="flex flex-col-reverse max-w-full gap-5">
+      <div className="flex flex-col max-w-full gap-5">
         {textPostContent.length > 0 ? (
           textPostContent.map((postData, index) => (
             <div
@@ -180,8 +229,44 @@ const Feed = () => {
               style={{ overflowWrap: "break-word", wordBreak: "break-word" }}
             >
               <div className="flex flex-col">
-                <div className="text-lg font-semibold mb-2">
-                  {postUsernames[index]}
+                <div className="text-lg font-semibold mb-2 flex justify-between">
+                  <div>{postUsernames[index]} </div>
+                  <div className="relative">
+                    <div
+                      className="cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleMoreOptions(index);
+                      }}
+                    >
+                      <MoreHorizIcon />
+                    </div>
+
+                    {moreOptionsVisible[index] && (
+                      <div className="absolute right-0 p-2 w-48 bg-gray-700 rounded-md shadow-xl">
+                        <ul className="py-1">
+                          <li
+                            className="px-4 py-2  hover:bg-gray-500 cursor-pointer"
+                            onClick={() => handleEditPost(index)}
+                          >
+                            Edit Post
+                          </li>
+                          <li
+                            className="px-4 py-2  hover:bg-gray-500  cursor-pointer"
+                            onClick={() => handleDeletePost(index)}
+                          >
+                            Delete Post
+                          </li>
+                          <li
+                            className="px-4 py-2  hover:bg-gray-500  cursor-pointer"
+                            onClick={() => handleHidePost(index)}
+                          >
+                            Hide Post
+                          </li>
+                        </ul>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className="mb-4 break-words flex">
                   <div className="p-2">{postData}</div>

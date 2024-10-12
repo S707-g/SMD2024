@@ -78,7 +78,7 @@ const Login = ({ onSuccess }) => {
       if (!querySnapshot.empty) {
         setSignUpError("This username has been used.");
       } else {
-        const newUser = { username, password };
+        const newUser = { username, password, profile_url: "/profile.webp" };
         await addUser(newUser);
         console.log("User signed up:", newUser);
 
