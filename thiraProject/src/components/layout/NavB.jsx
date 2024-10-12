@@ -25,6 +25,7 @@ const NavB = () => {
 
   const handleLogoClick = () => {
     homeNavigate(`/`);
+    window.location.reload();
   };
 
   const closeModalLogin = () => setModalLogin(false);

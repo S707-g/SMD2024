@@ -1,10 +1,13 @@
-import React, { useState, useContext, useEffect, useRef } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { Button, TextField } from "@mui/material";
+import MoonLoader from "react-spinners/MoonLoader";
 import { Timestamp } from "firebase/firestore";
+import { Link } from "react-router-dom";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import SendIcon from "@mui/icons-material/Send";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
+import { formatDistanceToNow } from "date-fns";
 import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
 import CreatePost from "./CreatePost";
 import ModalPost from "./ModalPost";
@@ -17,18 +20,16 @@ const Feed = () => {
   const { isAuthenticated, login, username } = useContext(AuthContext);
   const [showCreatePost, setShowCreatePost] = useState(false);
   const [showModalPost, setShowModalPost] = useState(false);
+  const [posts, setPosts] = useState([]);
   const [modalLogin, setModalLogin] = useState(false);
+  const [userProfilePic, setUserProfilePic] = useState("/profile.webp");
   const [textPostContent, setTextPostContent] = useState([]);
   const [imagePostContent, setImagePostContent] = useState([]);
   const [comments, setComments] = useState([]);
-  const [commentInput, setCommentInput] = useState([]);
-  const [likesCount, setLikesCount] = useState([]);
-  const [liked, setLiked] = useState([]);
   const [moreOptionsVisible, setMoreOptionsVisible] = useState({});
   const [currentPostIndex, setCurrentPostIndex] = useState(null);
   const [commentVisibility, setCommentVisibility] = useState([]);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [postUsernames, setPostUsernames] = useState([]); // State for usernames per post
 
   const { getUserByUsername, getUserById } = useUser();
   const { addPost, fetchPosts } = usePosts();
@@ -62,25 +63,20 @@ const Feed = () => {
   };
 
   const handleLikedToggle = (index) => {
-    setLiked((prevLiked) =>
-      prevLiked.map((status, i) => (i === index ? !status : status))
-    );
-    setLikesCount((prevCounts) =>
-      prevCounts.map((count, i) =>
-        i === index ? count + (liked[index] ? -1 : 1) : count
-      )
-    );
+    const updatedPosts = [...posts];
+    const post = updatedPosts[index];
+    post.liked = !post.liked;
+    post.likesCount += post.liked ? 1 : -1;
+    setPosts(updatedPosts);
   };
 
   const handleComment = (index) => {
-    if (commentInput[index]?.trim()) {
-      const newComments = [...comments];
-      newComments[index] = [...(newComments[index] || []), commentInput[index]];
-      setComments(newComments);
-
-      const newCommentInput = [...commentInput];
-      newCommentInput[index] = "";
-      setCommentInput(newCommentInput);
+    const commentText = posts[index].commentInput.trim();
+    if (commentText) {
+      const updatedPosts = [...posts];
+      updatedPosts[index].comments.push(commentText);
+      updatedPosts[index].commentInput = "";
+      setPosts(updatedPosts);
     }
   };
 
@@ -121,47 +117,66 @@ const Feed = () => {
   }, []);
 
   useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (username) {
+        const userDoc = await getUserByUsername(username);
+        if (userDoc && userDoc.profile_url) {
+          setUserProfilePic(userDoc.profile_url);
+        } else {
+          setUserProfilePic("/profile.webp"); // Use default if no profile picture
+        }
+      }
+    };
+
+    fetchUserProfile();
+  }, [username, getUserByUsername]);
+
+  useEffect(() => {
     if (isLoaded) return;
 
     const loadPosts = async () => {
       try {
         const data = await fetchPosts();
         if (data && data.length > 0) {
-          const textPosts = [];
-          const imagePosts = [];
-          const likes = [];
-          const likedStatus = [];
-          const comments = [];
-          const commentInputs = [];
-          const usernames = [];
+          const postsData = [];
 
           for (const post of data) {
-            textPosts.push(post.text);
-            imagePosts.push(post.img_url || "");
-            likes.push(0);
-            likedStatus.push(false);
-            comments.push([]);
-            commentInputs.push("");
+            let username = "Unknown User";
+            let profilePic = "/profile.webp"; // Set your default profile picture path
 
             if (post.userId) {
               const user = await getUserById(post.userId);
               if (user) {
-                usernames.push(user.username);
-              } else {
-                usernames.push("Unknown User");
+                username = user.username;
+                profilePic = user.profile_url || "/profile.webp";
               }
-            } else {
-              usernames.push("Unknown User");
             }
+
+            // Convert Firestore Timestamp to JavaScript Date
+            let createdAt = new Date();
+            if (post.createdAt) {
+              if (post.createdAt.toDate) {
+                createdAt = post.createdAt.toDate();
+              } else {
+                // If already a Date object
+                createdAt = post.createdAt;
+              }
+            }
+
+            postsData.push({
+              text: post.text,
+              img_url: post.img_url || "",
+              likesCount: 0,
+              liked: false,
+              comments: [],
+              commentInput: "",
+              username,
+              profilePic,
+              createdAt,
+            });
           }
 
-          setTextPostContent(textPosts);
-          setImagePostContent(imagePosts);
-          setLikesCount(likes);
-          setLiked(likedStatus);
-          setComments(comments);
-          setCommentInput(commentInputs);
-          setPostUsernames(usernames);
+          setPosts(postsData);
           setIsLoaded(true);
         } else {
           console.error("No posts found");
@@ -199,19 +214,32 @@ const Feed = () => {
 
     await addPost(postDetail);
 
-    setTextPostContent((prev) => [newPostContent, ...prev]);
-    setImagePostContent((prev) => [imageUrl, ...prev]);
-    setLikesCount((prev) => [0, ...prev]);
-    setLiked((prev) => [false, ...prev]);
-    setComments((prev) => [[], ...prev]);
-    setCommentInput((prev) => ["", ...prev]);
-    setPostUsernames((prev) => [username, ...prev]);
+    const newPost = {
+      text: newPostContent,
+      img_url: imageUrl || "",
+      likesCount: 0,
+      liked: false,
+      comments: [],
+      commentInput: "",
+      username,
+      profilePic: userDoc.profile_url || "/profile.webp",
+      createdAt: new Date(),
+    };
+
+    setPosts((prev) => [newPost, ...prev]);
   };
 
   return (
     <div className="flex flex-col text-white">
       <div className="flex flex-row p-3 items-center">
-        <div className="mx-4">{username || ""}</div>
+        <Link to={`/profile/${username}`} className="flex items-center">
+          <img
+            src={userProfilePic}
+            alt={`${username}'s profile`}
+            className="w-10 h-10 rounded-full mr-2"
+          />
+          <div className="mx-4">{username || ""}</div>
+        </Link>
         <Button
           onClick={handleCreatePost}
           className="!rounded-2xl flex-1 !bg-gray-700 !text-white !text-start hover:!bg-gray-600"
@@ -220,18 +248,41 @@ const Feed = () => {
         </Button>
       </div>
 
-      <div className="flex flex-col max-w-full gap-5">
-        {textPostContent.length > 0 ? (
-          textPostContent.map((postData, index) => (
+      <div className="flex flex-col max-w-full gap-5 ">
+        {posts.length > 0 ? (
+          posts.map((post, index) => (
             <div
               key={index}
               className="border border-gray-400 rounded-lg shadow-md p-4 mb-2 bg-gray-800"
               style={{ overflowWrap: "break-word", wordBreak: "break-word" }}
             >
               <div className="flex flex-col">
-                <div className="text-lg font-semibold mb-2 flex justify-between">
-                  <div>{postUsernames[index]} </div>
-                  <div className="relative">
+                {/* Post Header */}
+                <div className="flex items-center mb-2">
+                  <Link
+                    to={`/profile/${post.username}`}
+                    className="flex items-center"
+                  >
+                    <img
+                      src={post.profilePic}
+                      alt={`${post.username}'s profile`}
+                      className="w-10 h-10 rounded-full mr-2"
+                    />
+                    <div className="flex flex-col">
+                      <div className="text-lg font-semibold">
+                        {post.username}
+                      </div>
+                      <div className="text-sm text-gray-400">
+                        {post.createdAt
+                          ? formatDistanceToNow(post.createdAt, {
+                              addSuffix: true,
+                            })
+                          : "Just now"}
+                      </div>
+                    </div>
+                  </Link>
+                  {/* More options */}
+                  <div className="relative options-container ml-auto">
                     <div
                       className="cursor-pointer"
                       onClick={(e) => {
@@ -241,53 +292,58 @@ const Feed = () => {
                     >
                       <MoreHorizIcon />
                     </div>
-
                     {moreOptionsVisible[index] && (
                       <div className="absolute right-0 p-2 w-48 bg-gray-700 rounded-md shadow-xl">
+                        {/* Menu items */}
                         <ul className="py-1">
                           <li
-                            className="px-4 py-2  hover:bg-gray-500 cursor-pointer"
+                            className="px-4 py-2 hover:bg-gray-500 cursor-pointer"
                             onClick={() => handleEditPost(index)}
                           >
                             Edit Post
                           </li>
                           <li
-                            className="px-4 py-2  hover:bg-gray-500  cursor-pointer"
-                            onClick={() => handleDeletePost(index)}
-                          >
-                            Delete Post
-                          </li>
-                          <li
-                            className="px-4 py-2  hover:bg-gray-500  cursor-pointer"
+                            className="px-4 py-2 hover:bg-gray-500 cursor-pointer"
                             onClick={() => handleHidePost(index)}
                           >
                             Hide Post
                           </li>
+                          <li
+                            className="px-4 py-2 hover:bg-gray-500 cursor-pointer"
+                            onClick={() => handleDeletePost(index)}
+                          >
+                            Delete Post
+                          </li>
+                          {/* Other menu items */}
                         </ul>
                       </div>
                     )}
                   </div>
                 </div>
+
+                {/* Post Content */}
                 <div className="mb-4 break-words flex">
-                  <div className="p-2">{postData}</div>
+                  <div className="p-2">{post.text}</div>
                 </div>
 
-                {imagePostContent[index] && (
+                {/* Post Image */}
+                {post.img_url && (
                   <div className="mb-4">
                     <img
-                      src={imagePostContent[index]}
+                      src={post.img_url}
                       alt="Post"
                       className="w-full max-w-full h-auto max-h-96 object-contain"
                     />
                   </div>
                 )}
 
+                {/* Post Actions */}
                 <div className="border-t-2 border-gray-500 p-2 pt-4">
                   <div className="flex space-x-4 items-end justify-between pb-2">
                     <div className="flex flex-row gap-3">
-                      {likesCount[index] > 0 && (
+                      {post.likesCount > 0 && (
                         <span className="items-end flex">
-                          {likesCount[index]} likes
+                          {post.likesCount} likes
                         </span>
                       )}
                     </div>
@@ -295,8 +351,8 @@ const Feed = () => {
                       onClick={() => showCommentPost(index)}
                       className="cursor-pointer"
                     >
-                      {comments[index]?.length > 0 && (
-                        <div>{comments[index].length} comments</div>
+                      {post.comments.length > 0 && (
+                        <div>{post.comments.length} comments</div>
                       )}
                     </div>
                   </div>
@@ -306,7 +362,7 @@ const Feed = () => {
                       onClick={() => handleLikedToggle(index)}
                       className="cursor-pointer hover:text-gray-600 flex items-end"
                     >
-                      {liked[index] ? (
+                      {post.liked ? (
                         <FavoriteIcon className="text-red-600" />
                       ) : (
                         <FavoriteBorderIcon />
@@ -321,9 +377,10 @@ const Feed = () => {
                   </div>
                 </div>
 
-                {commentVisibility[index] && comments[index].length <= 2 && (
+                {/* Comments Section */}
+                {commentVisibility[index] && post.comments.length <= 2 && (
                   <div className="flex flex-col gap-3 mt-4 border-t-2 border-gray-600 pt-4">
-                    {comments[index].map((comment, i) => (
+                    {post.comments.map((comment, i) => (
                       <div key={i} className="bg-gray-700 p-2 rounded-lg mt-2">
                         <div className="px-3">
                           <div>{username}</div>
@@ -338,14 +395,14 @@ const Feed = () => {
                           placeholder="Write a comment..."
                           variant="outlined"
                           className="!bg-gray-700 !rounded-xl"
-                          value={commentInput[index] || ""}
+                          value={post.commentInput}
                           maxRows={6}
                           fullWidth
                           multiline
                           onChange={(e) => {
-                            const newCommentInput = [...commentInput];
-                            newCommentInput[index] = e.target.value;
-                            setCommentInput(newCommentInput);
+                            const updatedPosts = [...posts];
+                            updatedPosts[index].commentInput = e.target.value;
+                            setPosts(updatedPosts);
                           }}
                           sx={{
                             "& .MuiInputBase-root": { color: "white" },
@@ -378,7 +435,9 @@ const Feed = () => {
             </div>
           ))
         ) : (
-          <p>No post yet</p>
+          <div className="flex justify-center h-full items-center mt-10 pt-44">
+            <MoonLoader color="#ffffff" size={100} />
+          </div>
         )}
       </div>
 
