@@ -53,6 +53,10 @@ const Feed = () => {
   };
 
   const showCommentPost = (index) => {
+    if (!isAuthenticated) {
+      setModalLogin(true);
+      return;
+    }
     const post = posts[index];
     if (post.comments.length >= 3) {
       // For posts with 3 or more comments, open the modal
@@ -117,6 +121,7 @@ const Feed = () => {
       // Fetch updated comments
       const updatedComments = await fetchCommentsForPost(post.id);
       post.comments = updatedComments || [];
+      post.commentInput = "";
 
       setPosts(updatedPosts);
     }
@@ -325,9 +330,17 @@ const Feed = () => {
               <div className="flex flex-col">
                 {/* Post Header */}
                 <div className="flex items-center mb-2">
-                  <Link
-                    to={`/profile/${post.username}`}
-                    className="flex items-center"
+                  <div
+                    className="flex items-center cursor-pointer"
+                    onClick={() => {
+                      if (isAuthenticated) {
+                        // Redirect to the profile page if authenticated
+                        window.location.href = `/profile/${post.username}`;
+                      } else {
+                        // Show login modal if not authenticated
+                        setModalLogin(true);
+                      }
+                    }}
                   >
                     <img
                       src={post.profilePic}
@@ -346,7 +359,7 @@ const Feed = () => {
                           : "Just now"}
                       </div>
                     </div>
-                  </Link>
+                  </div>
                   {/* More options */}
                   <div className="relative options-container ml-auto">
                     <div
@@ -451,20 +464,62 @@ const Feed = () => {
                 {commentsVisibility[index] && post.comments?.length <= 2 && (
                   <div className="flex flex-col gap-3 mt-4 border-t-2 border-gray-600 pt-4">
                     {Array.isArray(post.comments) &&
-                      post.comments.map((comment) => (
-                        <div
-                          key={comment.id}
-                          className="bg-gray-700 p-2 rounded-lg mt-2"
-                        >
-                          <div className="px-3">
-                            <div>{comment.username}</div>
-                            <div className="text-sm py-2">{comment.text}</div>
+                      post.comments
+                        .slice()
+                        .reverse()
+                        .map((comment) => (
+                          <div
+                            key={comment.id}
+                            className="bg-gray-700 p-2 rounded-lg mt-2 flex items-start"
+                          >
+                            {/* User Profile Picture */}
+                            <img
+                              src={comment.profilePic || "/defaultProfile.webp"}
+                              alt={`${comment.username}'s profile`}
+                              className="w-8 h-8 rounded-full mr-2"
+                            />
+                            <div>
+                              {/* Username and Timestamp */}
+                              <div className="flex items-center">
+                                <div className="font-semibold mr-2">
+                                  {comment.username}
+                                </div>
+                                <div className="text-xs text-gray-400">
+                                  {comment.createdAt instanceof Date &&
+                                  !isNaN(comment.createdAt)
+                                    ? formatDistanceToNow(comment.createdAt, {
+                                        addSuffix: true,
+                                      })
+                                    : "Just now"}
+                                </div>
+                              </div>
+                              {/* Comment Text */}
+                              <div className="text-sm py-1 break-words">
+                                {comment.text}
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
                     <div className="flex flex-row gap-3 mt-2">
-                      <div>{username}</div>
-                      <div className="flex-1 px-5">
+                      <div
+                        className="flex  cursor-pointer"
+                        onClick={() => {
+                          if (isAuthenticated) {
+                            // Redirect to the profile page if authenticated
+                            window.location.href = `/profile/${username}`;
+                          } else {
+                            // Show login modal if not authenticated
+                            setModalLogin(true);
+                          }
+                        }}
+                      >
+                        <img
+                          src={userProfilePic}
+                          alt={`${username}'s profile`}
+                          className="w-10 h-10 rounded-full mr-2"
+                        />
+                      </div>
+                      <div className="flex-1 ">
                         <TextField
                           placeholder="Write a comment..."
                           variant="outlined"
@@ -495,12 +550,14 @@ const Feed = () => {
                             },
                           }}
                         />
-                        <div className="text-end pt-3">
-                          <SendIcon
-                            onClick={() => handleComment(index)}
-                            className="cursor-pointer"
-                          />
-                        </div>
+                      </div>
+                      <div className="text-end pt-3">
+                        <SendIcon
+                          onClick={() =>
+                            handleComment(index, post.commentInput)
+                          }
+                          className="cursor-pointer"
+                        />
                       </div>
                     </div>
                   </div>
