@@ -15,17 +15,17 @@ import Login from "../layout/login/Login";
 import AuthContext from "../../context/AuthContext";
 import useUser from "../../hooks/useUser";
 import usePosts from "../../hooks/usePost";
+import useLikes from "../../hooks/useLikes";
 
 const Feed = () => {
-  const { isAuthenticated, login, username } = useContext(AuthContext);
+  const { isAuthenticated, login, username, userId } = useContext(AuthContext);
   const [showCreatePost, setShowCreatePost] = useState(false);
   const [showModalPost, setShowModalPost] = useState(false);
   const [posts, setPosts] = useState([]);
   const [modalLogin, setModalLogin] = useState(false);
-  const [userProfilePic, setUserProfilePic] = useState("/profile.webp");
-  const [textPostContent, setTextPostContent] = useState([]);
-  const [imagePostContent, setImagePostContent] = useState([]);
-  const [comments, setComments] = useState([]);
+  const [userProfilePic, setUserProfilePic] = useState(
+    "https://github.com/S707-g/SMD2024/blob/gotinwza/thiraProject/src/components/img/defaultProfile.webp"
+  );
   const [moreOptionsVisible, setMoreOptionsVisible] = useState({});
   const [currentPostIndex, setCurrentPostIndex] = useState(null);
   const [commentVisibility, setCommentVisibility] = useState([]);
@@ -33,6 +33,7 @@ const Feed = () => {
 
   const { getUserByUsername, getUserById } = useUser();
   const { addPost, fetchPosts } = usePosts();
+  const { isPostLikedByUser, likePost, unlikePost, getLikesCount } = useLikes();
 
   const handleCreatePost = () => {
     if (isAuthenticated) {
@@ -50,7 +51,7 @@ const Feed = () => {
   };
 
   const showCommentPost = (index) => {
-    if (comments[index]?.length > 1) {
+    if (posts[index]?.comments?.length > 1) {
       setCurrentPostIndex(index);
       setShowModalPost(true);
     } else {
@@ -62,11 +63,41 @@ const Feed = () => {
     }
   };
 
-  const handleLikedToggle = (index) => {
+  const addComment = (index, comment) => {
+    const updatedPosts = [...posts];
+    if (!Array.isArray(updatedPosts[index].comments)) {
+      updatedPosts[index].comments = [];
+    }
+    updatedPosts[index].comments.push(comment);
+    setPosts(updatedPosts);
+  };
+
+  const handleLikedToggle = async (index) => {
+    if (!isAuthenticated) {
+      setModalLogin(true);
+      return;
+    }
+
     const updatedPosts = [...posts];
     const post = updatedPosts[index];
-    post.liked = !post.liked;
-    post.likesCount += post.liked ? 1 : -1;
+
+    if (!userId) {
+      console.error("User ID not found for the current user.");
+      return;
+    }
+
+    if (post.liked) {
+      // Unlike the post
+      await unlikePost(post.id, userId);
+      post.likesCount -= 1;
+      post.liked = false;
+    } else {
+      // Like the post
+      await likePost(post.id, userId);
+      post.likesCount += 1;
+      post.liked = true;
+    }
+
     setPosts(updatedPosts);
   };
 
@@ -74,6 +105,9 @@ const Feed = () => {
     const commentText = posts[index].commentInput.trim();
     if (commentText) {
       const updatedPosts = [...posts];
+      if (!Array.isArray(updatedPosts[index].comments)) {
+        updatedPosts[index].comments = [];
+      }
       updatedPosts[index].comments.push(commentText);
       updatedPosts[index].commentInput = "";
       setPosts(updatedPosts);
@@ -123,7 +157,9 @@ const Feed = () => {
         if (userDoc && userDoc.profile_url) {
           setUserProfilePic(userDoc.profile_url);
         } else {
-          setUserProfilePic("/profile.webp"); // Use default if no profile picture
+          setUserProfilePic(
+            "https://github.com/S707-g/SMD2024/blob/gotinwza/thiraProject/src/components/img/defaultProfile.webp"
+          ); // Use default if no profile picture
         }
       }
     };
@@ -137,45 +173,47 @@ const Feed = () => {
     const loadPosts = async () => {
       try {
         const data = await fetchPosts();
-        if (data && data.length > 0) {
-          const postsData = [];
+        if (data && data?.length > 0) {
+          const postPromises = data.map(async (post) => {
+            const postData = { ...post };
 
-          for (const post of data) {
-            let username = "Unknown User";
-            let profilePic = "/profile.webp"; // Set your default profile picture path
-
+            // Fetch user data
             if (post.userId) {
               const user = await getUserById(post.userId);
-              if (user) {
-                username = user.username;
-                profilePic = user.profile_url || "/profile.webp";
-              }
+              postData.username = user?.username || "Unknown User";
+              postData.profilePic = user?.profile_url || "/profile.webp";
+            } else {
+              postData.username = "Unknown User";
+              postData.profilePic = "/profile.webp";
             }
+
+            // Fetch likes count and if the current user has liked the post
+            const likesCountPromise = getLikesCount(post.id);
+            const likedPromise =
+              isAuthenticated && userId
+                ? isPostLikedByUser(post.id, userId)
+                : false;
+
+            const [likesCount, liked] = await Promise.all([
+              likesCountPromise,
+              likedPromise,
+            ]);
+            postData.likesCount = likesCount;
+            postData.liked = liked;
 
             // Convert Firestore Timestamp to JavaScript Date
-            let createdAt = new Date();
-            if (post.createdAt) {
-              if (post.createdAt.toDate) {
-                createdAt = post.createdAt.toDate();
-              } else {
-                // If already a Date object
-                createdAt = post.createdAt;
-              }
-            }
+            postData.createdAt = post.createdAt?.toDate
+              ? post.createdAt.toDate()
+              : new Date(post.createdAt);
 
-            postsData.push({
-              text: post.text,
-              img_url: post.img_url || "",
-              likesCount: 0,
-              liked: false,
-              comments: [],
-              commentInput: "",
-              username,
-              profilePic,
-              createdAt,
-            });
-          }
+            // Initialize comments and commentInput
+            postData.comments = [];
+            postData.commentInput = "";
 
+            return postData;
+          });
+
+          const postsData = await Promise.all(postPromises);
           setPosts(postsData);
           setIsLoaded(true);
         } else {
@@ -187,7 +225,7 @@ const Feed = () => {
     };
 
     loadPosts();
-  }, [isLoaded]);
+  }, [isLoaded, isAuthenticated, userId, fetchPosts, getUserById]);
 
   const addNewPost = async (newPostContent, newImageContent) => {
     let imageUrl = null;
@@ -196,12 +234,8 @@ const Feed = () => {
       imageUrl = await uploadImageToGoogleCloud(newImageContent);
     }
 
-    // Use username to get userId
-    const userDoc = await getUserByUsername(username);
-    const userId = userDoc ? userDoc.id : null;
-
     if (!userId) {
-      console.error("User ID not found for username:", username);
+      console.error("User ID not found for the current user.");
       return;
     }
 
@@ -212,9 +246,10 @@ const Feed = () => {
       createdAt: Timestamp.now(),
     };
 
-    await addPost(postDetail);
+    const newPostRef = await addPost(postDetail); // Capture the new post reference
 
     const newPost = {
+      id: newPostRef.id, // Use the ID from the new post reference
       text: newPostContent,
       img_url: imageUrl || "",
       likesCount: 0,
@@ -222,7 +257,7 @@ const Feed = () => {
       comments: [],
       commentInput: "",
       username,
-      profilePic: userDoc.profile_url || "/profile.webp",
+      profilePic: userProfilePic,
       createdAt: new Date(),
     };
 
@@ -232,14 +267,26 @@ const Feed = () => {
   return (
     <div className="flex flex-col text-white">
       <div className="flex flex-row p-3 items-center">
-        <Link to={`/profile/${username}`} className="flex items-center">
+        <div
+          className="flex items-center cursor-pointer"
+          onClick={() => {
+            if (isAuthenticated) {
+              // Redirect to the profile page if authenticated
+              window.location.href = `/profile/${username}`;
+            } else {
+              // Show login modal if not authenticated
+              setModalLogin(true);
+            }
+          }}
+        >
           <img
             src={userProfilePic}
             alt={`${username}'s profile`}
             className="w-10 h-10 rounded-full mr-2"
           />
           <div className="mx-4">{username || ""}</div>
-        </Link>
+        </div>
+
         <Button
           onClick={handleCreatePost}
           className="!rounded-2xl flex-1 !bg-gray-700 !text-white !text-start hover:!bg-gray-600"
@@ -249,7 +296,7 @@ const Feed = () => {
       </div>
 
       <div className="flex flex-col max-w-full gap-5 ">
-        {posts.length > 0 ? (
+        {posts?.length > 0 ? (
           posts.map((post, index) => (
             <div
               key={index}
@@ -343,7 +390,8 @@ const Feed = () => {
                     <div className="flex flex-row gap-3">
                       {post.likesCount > 0 && (
                         <span className="items-end flex">
-                          {post.likesCount} likes
+                          {post.likesCount}{" "}
+                          {post.likesCount === 1 ? "like" : "likes"}
                         </span>
                       )}
                     </div>
@@ -351,8 +399,11 @@ const Feed = () => {
                       onClick={() => showCommentPost(index)}
                       className="cursor-pointer"
                     >
-                      {post.comments.length > 0 && (
-                        <div>{post.comments.length} comments</div>
+                      {post.comments?.length > 0 && (
+                        <div>
+                          {post.comments.length}{" "}
+                          {post.comments.length === 1 ? "comment" : "comments"}
+                        </div>
                       )}
                     </div>
                   </div>
@@ -378,7 +429,7 @@ const Feed = () => {
                 </div>
 
                 {/* Comments Section */}
-                {commentVisibility[index] && post.comments.length <= 2 && (
+                {commentVisibility[index] && post.comments?.length <= 2 && (
                   <div className="flex flex-col gap-3 mt-4 border-t-2 border-gray-600 pt-4">
                     {post.comments.map((comment, i) => (
                       <div key={i} className="bg-gray-700 p-2 rounded-lg mt-2">
@@ -506,9 +557,7 @@ const Feed = () => {
               ✕
             </button>
             <ModalPost
-              post={textPostContent[currentPostIndex]}
-              image={imagePostContent[currentPostIndex]}
-              comments={comments[currentPostIndex]}
+              post={posts[currentPostIndex]}
               addComment={(comment) => addComment(currentPostIndex, comment)}
             />
           </div>
