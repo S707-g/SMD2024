@@ -1,7 +1,7 @@
 import React, { useState, useContext, useEffect } from "react";
 import { Button, TextField } from "@mui/material";
 import MoonLoader from "react-spinners/MoonLoader";
-import { Timestamp } from "firebase/firestore";
+import { Timestamp, getDoc } from "firebase/firestore";
 import { Link } from "react-router-dom";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import FavoriteIcon from "@mui/icons-material/Favorite";
@@ -16,6 +16,7 @@ import AuthContext from "../../context/AuthContext";
 import useUser from "../../hooks/useUser";
 import usePosts from "../../hooks/usePost";
 import useLikes from "../../hooks/useLikes";
+import useComments from "../../hooks/useComments";
 
 const Feed = () => {
   const { isAuthenticated, login, username, userId } = useContext(AuthContext);
@@ -28,12 +29,13 @@ const Feed = () => {
   );
   const [moreOptionsVisible, setMoreOptionsVisible] = useState({});
   const [currentPostIndex, setCurrentPostIndex] = useState(null);
-  const [commentVisibility, setCommentVisibility] = useState([]);
+  const [commentsVisibility, setCommentsVisibility] = useState({});
   const [isLoaded, setIsLoaded] = useState(false);
 
   const { getUserByUsername, getUserById } = useUser();
   const { addPost, fetchPosts } = usePosts();
   const { isPostLikedByUser, likePost, unlikePost, getLikesCount } = useLikes();
+  const { addComment, fetchCommentsForPost } = useComments();
 
   const handleCreatePost = () => {
     if (isAuthenticated) {
@@ -51,25 +53,10 @@ const Feed = () => {
   };
 
   const showCommentPost = (index) => {
-    if (posts[index]?.comments?.length > 1) {
-      setCurrentPostIndex(index);
-      setShowModalPost(true);
-    } else {
-      setCommentVisibility((prevVisibility) => {
-        const updatedVisibility = [...prevVisibility];
-        updatedVisibility[index] = !updatedVisibility[index];
-        return updatedVisibility;
-      });
-    }
-  };
-
-  const addComment = (index, comment) => {
-    const updatedPosts = [...posts];
-    if (!Array.isArray(updatedPosts[index].comments)) {
-      updatedPosts[index].comments = [];
-    }
-    updatedPosts[index].comments.push(comment);
-    setPosts(updatedPosts);
+    setCommentsVisibility((prev) => ({
+      ...prev,
+      [index]: !prev[index],
+    }));
   };
 
   const handleLikedToggle = async (index) => {
@@ -101,15 +88,23 @@ const Feed = () => {
     setPosts(updatedPosts);
   };
 
-  const handleComment = (index) => {
+  const handleComment = async (index) => {
     const commentText = posts[index].commentInput.trim();
+    if (!isAuthenticated) {
+      setModalLogin(true);
+      return;
+    }
     if (commentText) {
       const updatedPosts = [...posts];
-      if (!Array.isArray(updatedPosts[index].comments)) {
-        updatedPosts[index].comments = [];
-      }
-      updatedPosts[index].comments.push(commentText);
-      updatedPosts[index].commentInput = "";
+      const post = updatedPosts[index];
+
+      // Add comment to Firestore
+      await addComment(post.id, userId, commentText);
+
+      // Fetch updated comments
+      const updatedComments = await fetchCommentsForPost(post.id);
+      post.comments = updatedComments || [];
+      post.commentInput = "";
       setPosts(updatedPosts);
     }
   };
@@ -201,13 +196,16 @@ const Feed = () => {
             postData.likesCount = likesCount;
             postData.liked = liked;
 
+            // Fetch comments for the post
+            const comments = await fetchCommentsForPost(post.id);
+            postData.comments = comments || [];
+
             // Convert Firestore Timestamp to JavaScript Date
             postData.createdAt = post.createdAt?.toDate
               ? post.createdAt.toDate()
               : new Date(post.createdAt);
 
-            // Initialize comments and commentInput
-            postData.comments = [];
+            // Initialize and commentInput
             postData.commentInput = "";
 
             return postData;
@@ -399,7 +397,7 @@ const Feed = () => {
                       onClick={() => showCommentPost(index)}
                       className="cursor-pointer"
                     >
-                      {post.comments?.length > 0 && (
+                      {post.comments.length > 0 && (
                         <div>
                           {post.comments.length}{" "}
                           {post.comments.length === 1 ? "comment" : "comments"}
@@ -429,16 +427,20 @@ const Feed = () => {
                 </div>
 
                 {/* Comments Section */}
-                {commentVisibility[index] && post.comments?.length <= 2 && (
+                {commentsVisibility[index] && post.comments?.length <= 2 && (
                   <div className="flex flex-col gap-3 mt-4 border-t-2 border-gray-600 pt-4">
-                    {post.comments.map((comment, i) => (
-                      <div key={i} className="bg-gray-700 p-2 rounded-lg mt-2">
-                        <div className="px-3">
-                          <div>{username}</div>
-                          <div className="text-sm py-2">{comment}</div>
+                    {Array.isArray(post.comments) &&
+                      post.comments.map((comment) => (
+                        <div
+                          key={comment.i}
+                          className="bg-gray-700 p-2 rounded-lg mt-2"
+                        >
+                          <div className="px-3">
+                            <div>{comment.username}</div>
+                            <div className="text-sm py-2">{comment.text}</div>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
                     <div className="flex flex-row gap-3 mt-2">
                       <div>{username}</div>
                       <div className="flex-1 px-5">
