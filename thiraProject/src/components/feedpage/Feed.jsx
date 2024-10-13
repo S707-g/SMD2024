@@ -53,10 +53,18 @@ const Feed = () => {
   };
 
   const showCommentPost = (index) => {
-    setCommentsVisibility((prev) => ({
-      ...prev,
-      [index]: !prev[index],
-    }));
+    const post = posts[index];
+    if (post.comments.length >= 3) {
+      // For posts with 3 or more comments, open the modal
+      setCurrentPostIndex(index);
+      setShowModalPost(true);
+    } else {
+      // For posts with 2 or fewer comments, toggle inline comments
+      setCommentsVisibility((prev) => ({
+        ...prev,
+        [index]: !prev[index],
+      }));
+    }
   };
 
   const handleLikedToggle = async (index) => {
@@ -88,8 +96,13 @@ const Feed = () => {
     setPosts(updatedPosts);
   };
 
-  const handleComment = async (index) => {
-    const commentText = posts[index].commentInput.trim();
+  const handleComment = async (index, commentText) => {
+    console.log(
+      "handleComment called with index:",
+      index,
+      "and commentText:",
+      commentText
+    );
     if (!isAuthenticated) {
       setModalLogin(true);
       return;
@@ -104,7 +117,7 @@ const Feed = () => {
       // Fetch updated comments
       const updatedComments = await fetchCommentsForPost(post.id);
       post.comments = updatedComments || [];
-      post.commentInput = "";
+
       setPosts(updatedPosts);
     }
   };
@@ -201,9 +214,17 @@ const Feed = () => {
             postData.comments = comments || [];
 
             // Convert Firestore Timestamp to JavaScript Date
-            postData.createdAt = post.createdAt?.toDate
-              ? post.createdAt.toDate()
-              : new Date(post.createdAt);
+            postData.createdAt = post.createdAt?.toDate;
+            if (post.createdAt && post.createdAt.toDate) {
+              // Firestore Timestamp object
+              postData.createdAt = post.createdAt.toDate();
+            } else if (post.createdAt) {
+              // Already a Date object or ISO string
+              postData.createdAt = new Date(post.createdAt);
+            } else {
+              // Fallback to current date or handle missing date
+              postData.createdAt = new Date();
+            }
 
             // Initialize and commentInput
             postData.commentInput = "";
@@ -432,7 +453,7 @@ const Feed = () => {
                     {Array.isArray(post.comments) &&
                       post.comments.map((comment) => (
                         <div
-                          key={comment.i}
+                          key={comment.id}
                           className="bg-gray-700 p-2 rounded-lg mt-2"
                         >
                           <div className="px-3">
@@ -560,7 +581,9 @@ const Feed = () => {
             </button>
             <ModalPost
               post={posts[currentPostIndex]}
-              addComment={(comment) => addComment(currentPostIndex, comment)}
+              handleComment={(commentText) =>
+                handleComment(currentPostIndex, commentText)
+              }
             />
           </div>
         </div>
