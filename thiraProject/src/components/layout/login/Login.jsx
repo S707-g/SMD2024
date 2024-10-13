@@ -78,7 +78,12 @@ const Login = ({ onSuccess }) => {
       if (!querySnapshot.empty) {
         setSignUpError("This username has been used.");
       } else {
-        const newUser = { username, password, profile_url: "/profile.webp" };
+        const newUser = {
+          username,
+          password,
+          profile_url:
+            "https://github.com/S707-g/SMD2024/blob/gotinwza/thiraProject/src/components/img/defaultProfile.webp",
+        };
         await addUser(newUser);
         console.log("User signed up:", newUser);
 

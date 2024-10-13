@@ -40,7 +40,9 @@ const Profile = () => {
     );
   }
 
-  const profileImage = bio?.profile_url || "/profile.webp";
+  const profileImage =
+    bio?.profile_url ||
+    "https://github.com/S707-g/SMD2024/blob/gotinwza/thiraProject/src/components/img/defaultProfile.webp";
 
   return bio && bio.profile_url.length > 1 ? (
     <div className="w-full h-full bg-gray-400 p-3">
