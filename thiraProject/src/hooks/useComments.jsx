@@ -32,18 +32,27 @@ const useComments = () => {
       orderBy("createdAt", "asc")
     );
     const querySnapshot = await getDocs(q);
-    if (querySnapshot.empty) {
-      return []; // Return an empty array if no comments
-    }
+
     const comments = await Promise.all(
       querySnapshot.docs.map(async (doc) => {
         const commentData = { id: doc.id, ...doc.data() };
-        // Fetch username
+
+        // Fetch user data
         const user = await getUserById(commentData.userId);
         commentData.username = user?.username || "Unknown User";
+        commentData.profilePic = user?.profile_url || "/defaultProfile.webp";
+
+        // Convert Firestore Timestamp to JavaScript Date
+        if (commentData.createdAt && commentData.createdAt.toDate) {
+          commentData.createdAt = commentData.createdAt.toDate();
+        } else {
+          commentData.createdAt = new Date(); // Fallback to current date
+        }
+
         return commentData;
       })
     );
+
     return comments;
   };
 
