@@ -2,7 +2,6 @@ import React, { useState, useContext } from "react";
 import { TextField } from "@mui/material";
 import ImageIcon from "@mui/icons-material/Image";
 import AuthContext from "../../context/AuthContext";
-import { useUpload } from "../../hooks/useUpload";
 
 const CreatePost = ({ textPostContent, closePost }) => {
   const [localPostContent, setLocalPostContent] = useState("");
@@ -10,7 +9,6 @@ const CreatePost = ({ textPostContent, closePost }) => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState(null);
   const { username } = useContext(AuthContext);
-  const { upload } = useUpload();
 
   const handleInputChange = (event) => {
     setLocalPostContent(event.target.value); // Update local input state
@@ -29,13 +27,16 @@ const CreatePost = ({ textPostContent, closePost }) => {
     }
   };
 
-  const handleFileChange = async (event) => {
+  const handleFileChange = (event) => {
     const file = event.target.files[0];
+    setSelectedFile(file); // Update state with the selected file
 
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreviewUrl(reader.result); // Set the preview URL after reading the file
+    };
     if (file) {
-      const data = await upload(file);
-      setImagePreviewUrl(data.data.path);
-      setSelectedFile(data.data.path);
+      reader.readAsDataURL(file); // Read the file as a data URL
     }
   };
 
