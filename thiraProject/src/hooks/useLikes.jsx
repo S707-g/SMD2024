@@ -6,6 +6,7 @@ import {
   where,
   getDocs,
   doc,
+  writeBatch,
 } from "firebase/firestore";
 import db from "../database/FirebaseConfig";
 
@@ -56,12 +57,34 @@ const useLikes = () => {
     const querySnapshot = await getDocs(q);
     return querySnapshot.size;
   };
+  const deleteLikesForPost = async (postId) => {
+    try {
+      const likesQuery = query(
+        collection(db, "likes"),
+        where("postId", "==", postId)
+      );
+
+      const querySnapshot = await getDocs(likesQuery);
+
+      const batch = writeBatch(db);
+
+      querySnapshot.forEach((doc) => {
+        batch.delete(doc.ref);
+      });
+
+      await batch.commit();
+    } catch (error) {
+      console.error("Error deleting likes:", error);
+      throw error;
+    }
+  };
 
   return {
     isPostLikedByUser,
     likePost,
     unlikePost,
     getLikesCount,
+    deleteLikesForPost,
   };
 };
 
