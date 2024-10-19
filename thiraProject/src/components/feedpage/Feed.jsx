@@ -33,16 +33,9 @@ const Feed = () => {
   const [isLoaded, setIsLoaded] = useState(false);
 
   const { getUserByUsername, getUserById } = useUser();
-  const { addPost, fetchPosts, deletePost } = usePosts();
-  const {
-    isPostLikedByUser,
-    likePost,
-    unlikePost,
-    getLikesCount,
-    deleteLikesForPost,
-  } = useLikes();
-  const { addComment, fetchCommentsForPost, deleteCommentsForPost } =
-    useComments();
+  const { addPost, fetchPosts } = usePosts();
+  const { isPostLikedByUser, likePost, unlikePost, getLikesCount } = useLikes();
+  const { addComment, fetchCommentsForPost } = useComments();
 
   const handleCreatePost = () => {
     if (isAuthenticated) {
@@ -108,6 +101,12 @@ const Feed = () => {
   };
 
   const handleComment = async (index, commentText) => {
+    console.log(
+      "handleComment called with index:",
+      index,
+      "and commentText:",
+      commentText
+    );
     if (!isAuthenticated) {
       setModalLogin(true);
       return;
@@ -140,32 +139,9 @@ const Feed = () => {
     console.log(`Edit post at index: ${index}`);
   };
 
-  const handleDeletePost = async (index) => {
-    if (!isAuthenticated) {
-      setModalLogin(true);
-      return;
-    }
-
-    const post = posts[index];
-
-    try {
-      // Delete likes associated with the post
-      await deleteLikesForPost(post.id);
-
-      // Delete comments associated with the post
-      await deleteCommentsForPost(post.id);
-
-      // Delete the post itself
-      await deletePost(post.id);
-
-      // Remove the post from the posts array
-      const updatedPosts = [...posts];
-      updatedPosts.splice(index, 1);
-      setPosts(updatedPosts);
-    } catch (error) {
-      console.error("Error deleting post:", error);
-      alert("An error occurred while deleting the post.");
-    }
+  const handleDeletePost = (index) => {
+    // Implement delete functionality
+    console.log(`Delete post at index: ${index}`);
   };
 
   const handleHidePost = (index) => {
@@ -279,7 +255,7 @@ const Feed = () => {
     let imageUrl = null;
 
     if (newImageContent) {
-      imageUrl = newImageContent;
+      imageUrl = await uploadImageToGoogleCloud(newImageContent);
     }
 
     if (!userId) {

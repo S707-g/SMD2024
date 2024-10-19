@@ -6,7 +6,8 @@ import {
   getDocs,
   orderBy,
   Timestamp,
-  writeBatch,
+  doc,
+  onSnapshot,
 } from "firebase/firestore";
 import db from "../database/FirebaseConfig";
 import useUser from "./useUser";
@@ -55,32 +56,9 @@ const useComments = () => {
     return comments;
   };
 
-  const deleteCommentsForPost = async (postId) => {
-    try {
-      const commentsQuery = query(
-        collection(db, "comments"),
-        where("postId", "==", postId)
-      );
-
-      const querySnapshot = await getDocs(commentsQuery);
-
-      const batch = writeBatch(db);
-
-      querySnapshot.forEach((doc) => {
-        batch.delete(doc.ref);
-      });
-
-      await batch.commit();
-    } catch (error) {
-      console.error("Error deleting comments:", error);
-      throw error;
-    }
-  };
-
   return {
     addComment,
     fetchCommentsForPost,
-    deleteCommentsForPost,
   };
 };
 
