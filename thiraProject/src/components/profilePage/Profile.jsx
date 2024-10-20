@@ -10,10 +10,40 @@ const Profile = () => {
   const [bio, setBio] = useState();
 
   useEffect(() => {
-    getUserByUsername(username).then((data) => setBio(data));
+    const fetchUser = async () => {
+      try {
+        const data = await getUserByUsername(username);
+        if (data) {
+          setBio(data);
+        } else {
+          setBio(null); // Explicitly set bio to null if user not found
+        }
+      } catch (error) {
+        console.error("Error fetching user:", error);
+        setBio(null);
+      }
+    };
+
+    fetchUser();
   }, [username, getUserByUsername]);
 
-  return (
+  if (bio === null) {
+    return (
+      <div className="w-full h-full bg-gray-400 p-3">
+        <div className="bg-white p-5 rounded-lg flex-col ">
+          <Typography variant="h5" color="error">
+            T_T Sorry, we couldn't find this user.
+          </Typography>
+        </div>
+      </div>
+    );
+  }
+
+  const profileImage =
+    bio?.profile_url ||
+    "https://github.com/S707-g/SMD2024/blob/gotinwza/thiraProject/src/components/img/defaultProfile.webp";
+
+  return bio && bio.profile_url.length > 1 ? (
     <div className="w-full h-full bg-gray-400 p-3">
       {/* Header Section */}
       <div className="bg-white p-5 rounded-lg flex-col ">
@@ -21,9 +51,9 @@ const Profile = () => {
           {/* Profile Picture */}
           <Grid item xs={12} sm={4} md={3}>
             <Avatar
-              src="src/components/img/blank-profile-picture-973460_1280.webp"
-              alt=""
-              sx={{ width: { xs: 100, sm: 130 }, height: { xs: 100, sm: 130 } }}
+              alt={username}
+              src={profileImage}
+              sx={{ width: 130, height: 130 }}
               className="mt-2 sm:mt-0 mx-auto sm:mx-0"
             />
           </Grid>
@@ -34,7 +64,7 @@ const Profile = () => {
               {username}
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              Password: {bio?.password}
+              Password: {bio.password}
             </Typography>
           </Grid>
         </Grid>
@@ -81,6 +111,8 @@ const Profile = () => {
         </Grid>
       </div>
     </div>
+  ) : (
+    <>T_T GOT CANT FIND THIS USER</>
   );
 };
 

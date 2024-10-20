@@ -15,6 +15,7 @@ const SideBarLeft = ({ onLogout }) => {
 
   const handleHomeClick = () => {
     homeNavigate(`/`);
+    window.location.reload();
   };
 
   const handleModalLogout = () => {
