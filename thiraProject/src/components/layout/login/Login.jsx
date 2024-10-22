@@ -83,6 +83,7 @@ const Login = ({ onSuccess }) => {
           password,
           profile_url:
             "https://github.com/S707-g/SMD2024/blob/gotinwza/thiraProject/src/components/img/defaultProfile.webp",
+          bio: "Default Bio",
         };
         await addUser(newUser);
         console.log("User signed up:", newUser);
