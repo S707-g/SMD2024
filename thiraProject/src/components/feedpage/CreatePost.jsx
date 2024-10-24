@@ -1,14 +1,14 @@
 import React, { useState, useContext } from "react";
 import { TextField } from "@mui/material";
 import ImageIcon from "@mui/icons-material/Image";
+import DeleteIcon from "@mui/icons-material/Delete";
 import AuthContext from "../../context/AuthContext";
 import { useUpload } from "../../hooks/useUpload";
 
 const CreatePost = ({ textPostContent, closePost }) => {
   const [localPostContent, setLocalPostContent] = useState("");
   const [showInputImage, setShowInputImage] = useState(false);
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [imagePreviewUrl, setImagePreviewUrl] = useState(null);
+  const [selectedFiles, setSelectedFiles] = useState([]); // Renamed to selectedFiles
   const { username } = useContext(AuthContext);
   const { upload } = useUpload();
 
@@ -21,21 +21,28 @@ const CreatePost = ({ textPostContent, closePost }) => {
   };
 
   const handlePostClick = () => {
-    if (localPostContent.trim() || selectedFile) {
-      // Pass both text and image content
-      textPostContent(localPostContent, selectedFile);
+    if (localPostContent.trim() || selectedFiles.length > 0) {
+      // Pass both text and images content
+      textPostContent(localPostContent, selectedFiles);
       setLocalPostContent(""); // Clear the input field after posting
+      setSelectedFiles([]); // Clear selected images after posting
       closePost(); // Close the post creation modal
     }
   };
 
   const handleFileChange = async (event) => {
-    const file = event.target.files[0];
-    if (file) {
+    const files = Array.from(event.target.files); // Get multiple files
+    const uploadPromises = files.map(async (file) => {
       const data = await upload(file);
-      setImagePreviewUrl(data.data.path);
-      setSelectedFile(data.data.path);
-    }
+      return data.data.path;
+    });
+
+    const uploadedFiles = await Promise.all(uploadPromises);
+    setSelectedFiles((prevFiles) => [...prevFiles, ...uploadedFiles]); // Add to existing images
+  };
+
+  const handleRemoveImage = (index) => {
+    setSelectedFiles((prevFiles) => prevFiles.filter((_, i) => i !== index)); // Remove image by index
   };
 
   return (
@@ -92,11 +99,12 @@ const CreatePost = ({ textPostContent, closePost }) => {
 
       {showInputImage && (
         <div className="mt-4">
-          {/* Styled file input */}
+          {/* Styled file input for multiple images */}
           <input
             type="file"
             id="file-input"
             className="hidden"
+            multiple
             onChange={handleFileChange}
           />
           <label
@@ -104,17 +112,29 @@ const CreatePost = ({ textPostContent, closePost }) => {
             className="cursor-pointer bg-gray-700 text-white px-4 py-2 rounded-md inline-flex items-center"
           >
             <ImageIcon className="mr-2" />
-            {selectedFile ? selectedFile.name : "Choose an image"}
+            {selectedFiles.length > 0
+              ? `${selectedFiles.length} files selected`
+              : "Choose images"}
           </label>
 
-          {/* Image Preview */}
-          {imagePreviewUrl && (
-            <div className="mt-4">
-              <img
-                src={imagePreviewUrl}
-                alt="Preview"
-                className="w-80 h-50 max-w-full max-h-60 object-cover rounded-md"
-              />
+          {/* Image Previews */}
+          {selectedFiles.length > 0 && (
+            <div className="mt-4 grid grid-cols-2 gap-4">
+              {selectedFiles.map((file, index) => (
+                <div key={index} className="relative">
+                  <img
+                    src={file}
+                    alt={`Preview ${index + 1}`}
+                    className="w-40 h-40 object-cover rounded-md"
+                  />
+                  <button
+                    onClick={() => handleRemoveImage(index)}
+                    className="absolute top-2 right-2 bg-gray-800 text-white rounded-full p-1"
+                  >
+                    <DeleteIcon />
+                  </button>
+                </div>
+              ))}
             </div>
           )}
         </div>
