@@ -8,8 +8,14 @@ import {
 import Feed from "./components/feedpage/Feed.jsx";
 import Layout from "./components/layout/Layout.jsx";
 import Profile from "./components/profilePage/Profile.jsx";
-// import BookmarkPage from './pages/BookmarkPage';
-// import FriendsPage from './pages/FriendsPage';
+import MessageList from "./components/messagePage/messageList.jsx";
+import { AuthProvider } from "./context/AuthContext.jsx";
+
+// Wrapper component to provide `navigate` to `AuthProvider`
+function AuthProviderWithNavigate({ children }) {
+  const navigate = useNavigate();
+  return <AuthProvider navigate={navigate}>{children}</AuthProvider>;
+}
 
 function App() {
   return (
@@ -17,10 +23,9 @@ function App() {
       <AuthProviderWithNavigate>
         <Routes>
           <Route path="/" element={<Layout />}>
-            <Route path="/feed" element={<Feed />} />
-            <Route path="/profile" element={<Profile />} />
-            {/* <Route path="/bookmarks" element={<BookmarkPage />} /> */}
-            {/* <Route path="/friends" element={<FriendsPage />} /> */}
+            <Route path="/" element={<Feed />} />
+            <Route path="/message" element={<MessageList />} />
+            <Route path="/profile/:username" element={<Profile />} />
           </Route>
         </Routes>
       </AuthProviderWithNavigate>
