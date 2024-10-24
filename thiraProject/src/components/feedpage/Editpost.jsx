@@ -69,7 +69,7 @@ const EditPost = ({ post, onUpdate, onClose }) => {
       <h2 className="text-xl mb-4">Edit Post</h2>
 
       {/* Make the container scrollable */}
-      <div className="max-h-[70vh] overflow-y-auto p-2">
+      <div className="max-h-[70vh] overflow-y-auto p-2 scrollbar-thin scrollbar-thumb-scrollbar-thumb scrollbar-track-scrollbar-track">
         <TextField
           label="Post Content"
           variant="outlined"
