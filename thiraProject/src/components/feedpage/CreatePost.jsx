@@ -9,7 +9,7 @@ const CreatePost = ({ textPostContent, closePost }) => {
   const [localPostContent, setLocalPostContent] = useState("");
   const [showInputImage, setShowInputImage] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]); // Renamed to selectedFiles
-  const { username } = useContext(AuthContext);
+  const { username, profilePic } = useContext(AuthContext);
   const { upload } = useUpload();
 
   const handleInputChange = (event) => {
@@ -54,11 +54,7 @@ const CreatePost = ({ textPostContent, closePost }) => {
 
       {/* Profile and Privacy Setting */}
       <div className="flex items-center space-x-2 p-4 m-4 justify-start w-full">
-        <img
-          src="https://via.placeholder.com/40"
-          alt="Profile"
-          className="rounded-full"
-        />
+        <img src={profilePic} alt="Profile" className="rounded-full" />
         <div>
           <div className="font-semibold">{username}</div>
           <div className="text-sm text-gray-500"></div>

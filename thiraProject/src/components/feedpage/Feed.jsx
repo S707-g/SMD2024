@@ -26,9 +26,7 @@ const Feed = () => {
   const [posts, setPosts] = useState([]);
   const [modalLogin, setModalLogin] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
-  const [userProfilePic, setUserProfilePic] = useState(
-    "https://github.com/S707-g/SMD2024/blob/gotinwza/thiraProject/src/components/img/defaultProfile.webp"
-  );
+  const [userProfilePic, setUserProfilePic] = useState("");
   const [showEditPostModal, setShowEditPostModal] = useState(false);
   const [postToEdit, setPostToEdit] = useState(null);
   const [moreOptionsVisible, setMoreOptionsVisible] = useState({});

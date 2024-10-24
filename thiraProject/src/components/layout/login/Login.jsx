@@ -15,7 +15,6 @@ const Login = ({ onSuccess }) => {
   const { addUser, loading, error } = useUser();
 
   useEffect(() => {
-    // Reset all fields and errors on component mount or remount
     setUsername("");
     setPassword("");
     setConfirmPassword("");
@@ -49,9 +48,9 @@ const Login = ({ onSuccess }) => {
     try {
       const querySnapshot = await getDocs(q);
       if (!querySnapshot.empty) {
-        console.log("User signed in successfully");
-        const userData = querySnapshot.docs[0].data(); // Get user data from Firestore
-        onSuccess({ username: userData.username }); // Pass user data to the parent
+        const userData = querySnapshot.docs[0].data();
+        const userId = querySnapshot.docs[0].id; // Get the user's ID from Firestore
+        onSuccess({ username: userData.username, userId }); // Pass both username and userId
       } else {
         setSignInError("Incorrect username or password.");
       }
@@ -81,13 +80,10 @@ const Login = ({ onSuccess }) => {
         const newUser = {
           username,
           password,
-          profile_url:
-            "https://github.com/S707-g/SMD2024/blob/gotinwza/thiraProject/src/components/img/defaultProfile.webp",
+          profile_url: "http://20.255.57.43:6969/uploads/1729786627476.jpg",
         };
         await addUser(newUser);
-        console.log("User signed up:", newUser);
 
-        // Clear fields and switch to Sign In mode after successful sign-up
         setUsername("");
         setPassword("");
         setConfirmPassword("");
