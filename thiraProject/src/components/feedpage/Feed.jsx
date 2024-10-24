@@ -495,7 +495,7 @@ const Feed = () => {
                     className={`mt-4 overflow-x-auto scrollbar-thin scrollbar-thumb-scrollbar-thumb scrollbar-track-scrollbar-track max-w-full flex gap-2 ${
                       post.img_urls.length === 1
                         ? "justify-center" // Center the single image
-                        : "justify-start" // For multiple images
+                        : "justify-start" // Align multiple images to the start
                     }`}
                   >
                     {post.img_urls.map((url, imgIndex) => (
@@ -505,10 +505,10 @@ const Feed = () => {
                         alt={`Post Image ${imgIndex + 1}`}
                         className={`mb-4 object-cover rounded-md ${
                           post.img_urls.length === 1
-                            ? "w-full h-auto" // Full width for single image
+                            ? "w-full max-w-[800px] h-auto" // Full width for single image with max-width limit
                             : post.img_urls.length === 2
-                            ? "w-1/2 h-auto" // Half width for two images
-                            : "w-52 h-auto flex-shrink-0" // Scrollable for more than two
+                            ? "flex-1 max-w-[400px] h-auto" // Flex for two images with a max-width limit
+                            : "flex-1 max-w-[300px] h-auto" // Flex for three or more, with smaller max-width
                         }`}
                       />
                     ))}
