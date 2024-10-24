@@ -25,6 +25,7 @@ const Feed = () => {
   const [showModalPost, setShowModalPost] = useState(false);
   const [posts, setPosts] = useState([]);
   const [modalLogin, setModalLogin] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
   const [userProfilePic, setUserProfilePic] = useState(
     "https://github.com/S707-g/SMD2024/blob/gotinwza/thiraProject/src/components/img/defaultProfile.webp"
   );
@@ -54,6 +55,15 @@ const Feed = () => {
     } else {
       setModalLogin(true);
     }
+  };
+
+  const handleImageClick = (url) => {
+    setSelectedImage(url); // Set the selected image URL
+  };
+
+  // Function to close the modal
+  const closeImageModal = () => {
+    setSelectedImage(null); // Clear the selected image
   };
 
   const closeCreatePost = () => setShowCreatePost(false);
@@ -503,13 +513,14 @@ const Feed = () => {
                         key={imgIndex}
                         src={url}
                         alt={`Post Image ${imgIndex + 1}`}
-                        className={`mb-4 object-cover rounded-md ${
+                        className={`mb-4 object-cover rounded-md cursor-pointer ${
                           post.img_urls.length === 1
-                            ? "w-full max-w-[800px] h-auto" // Full width for single image with max-width limit
+                            ? "w-full max-w-[800px] h-[500px]" // Full width for single image with max-width limit
                             : post.img_urls.length === 2
                             ? "flex-1 max-w-[400px] h-auto" // Flex for two images with a max-width limit
                             : "flex-1 max-w-[300px] h-auto" // Flex for three or more, with smaller max-width
                         }`}
+                        onClick={() => handleImageClick(url)}
                       />
                     ))}
                   </div>
@@ -764,6 +775,29 @@ const Feed = () => {
               post={postToEdit}
               onUpdate={handleUpdatePost}
               onClose={() => setShowEditPostModal(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {selectedImage && (
+        <div
+          className="fixed inset-0 bg-gray-900 bg-opacity-70 flex justify-center items-center z-50"
+          onClick={closeImageModal} // Close modal on click
+        >
+          <div className="bg-gray-800 p-6 rounded-lg shadow-lg relative text-white">
+            <button
+              className="absolute top-2 right-2 text-gray-400 hover:text-white"
+              onClick={closeImageModal} // Close button for modal
+            >
+              ✕
+            </button>
+            {/* Full-size image with max dimensions to fit the screen */}
+            <img
+              src={selectedImage}
+              alt="Full-size"
+              className="max-w-full max-h-full object-contain" // Ensures the image fits within the viewport
+              style={{ maxWidth: "90vw", maxHeight: "90vh" }} // Limits the image size to 90% of the viewport
             />
           </div>
         </div>
