@@ -11,11 +11,13 @@ import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
 import CreatePost from "./CreatePost";
 import ModalPost from "./ModalPost";
 import Login from "../layout/login/Login";
+import EditPost from "./Editpost";
 import AuthContext from "../../context/AuthContext";
 import useUser from "../../hooks/useUser";
 import usePosts from "../../hooks/usePost";
 import useLikes from "../../hooks/useLikes";
 import useComments from "../../hooks/useComments";
+import useHiddenPosts from "../../hooks/useHiddenPosts";
 
 const Feed = () => {
   const { isAuthenticated, login, username, userId } = useContext(AuthContext);
@@ -26,13 +28,16 @@ const Feed = () => {
   const [userProfilePic, setUserProfilePic] = useState(
     "https://github.com/S707-g/SMD2024/blob/gotinwza/thiraProject/src/components/img/defaultProfile.webp"
   );
+  const [showEditPostModal, setShowEditPostModal] = useState(false);
+  const [postToEdit, setPostToEdit] = useState(null);
   const [moreOptionsVisible, setMoreOptionsVisible] = useState({});
   const [currentPostIndex, setCurrentPostIndex] = useState(null);
   const [commentsVisibility, setCommentsVisibility] = useState({});
   const [isLoaded, setIsLoaded] = useState(false);
 
   const { getUserByUsername, getUserById } = useUser();
-  const { addPost, fetchPosts, deletePost } = usePosts();
+  const { addPost, fetchPosts, deletePost, updatePost } = usePosts();
+  const { addPostToHiddenPosts, getHiddenPosts } = useHiddenPosts();
   const {
     isPostLikedByUser,
     likePost,
@@ -135,8 +140,38 @@ const Feed = () => {
   };
 
   const handleEditPost = (index) => {
-    // Implement edit functionality
-    console.log(`Edit post at index: ${index}`);
+    if (!isAuthenticated) {
+      setModalLogin(true);
+      return;
+    }
+    const post = posts[index];
+    setPostToEdit({ ...post, index });
+    setShowEditPostModal(true);
+  };
+
+  const handleUpdatePost = async (updatedPost) => {
+    try {
+      // Update the post in Firestore
+      await updatePost(updatedPost.id, {
+        text: updatedPost.text,
+        img_urls: updatedPost.img_urls, // Changed to img_urls
+      });
+
+      // Update the local state
+      const updatedPosts = [...posts];
+      updatedPosts[updatedPost.index] = {
+        ...updatedPosts[updatedPost.index],
+        text: updatedPost.text,
+        img_urls: updatedPost.img_urls, // Changed to img_urls
+      };
+
+      setPosts(updatedPosts);
+      setShowEditPostModal(false);
+      setPostToEdit(null);
+    } catch (error) {
+      console.error("Error updating post:", error);
+      alert("An error occurred while updating the post.");
+    }
   };
 
   const handleDeletePost = async (index) => {
@@ -146,25 +181,45 @@ const Feed = () => {
     }
     const post = posts[index];
     try {
-      // Delete likes associated with the post
       await deleteLikesForPost(post.id);
-      // Delete comments associated with the post
       await deleteCommentsForPost(post.id);
-      // Delete the post itself
+      await addPostToHiddenPosts(userId, post.id, true);
       await deletePost(post.id);
-      // Remove the post from the posts array
+
       const updatedPosts = [...posts];
       updatedPosts.splice(index, 1);
       setPosts(updatedPosts);
+
+      // Close the more options menu after deletion
+      setMoreOptionsVisible((prev) => ({
+        ...prev,
+        [index]: false,
+      }));
     } catch (error) {
       console.error("Error deleting post:", error);
       alert("An error occurred while deleting the post.");
     }
   };
 
-  const handleHidePost = (index) => {
-    // Implement hide functionality
-    console.log(`Hide post at index: ${index}`);
+  const handleHidePost = async (index) => {
+    if (!isAuthenticated) {
+      setModalLogin(true);
+      return;
+    }
+
+    const post = posts[index];
+
+    try {
+      // Add post ID to the user's hidden posts in the database
+      await addPostToHiddenPosts(userId, post.id);
+
+      // Remove the post from the posts array
+      const updatedPosts = posts.filter((_, i) => i !== index);
+      setPosts(updatedPosts);
+    } catch (error) {
+      console.error("Error hiding post:", error);
+      alert("An error occurred while hiding the post.");
+    }
   };
 
   useEffect(() => {
@@ -203,57 +258,64 @@ const Feed = () => {
 
     const loadPosts = async () => {
       try {
+        let hiddenPosts = [];
+        if (isAuthenticated && userId) {
+          hiddenPosts = await getHiddenPosts(userId);
+        }
+
         const data = await fetchPosts();
         if (data && data?.length > 0) {
-          const postPromises = data.map(async (post) => {
-            const postData = { ...post };
+          const postPromises = data
+            .filter((post) => !hiddenPosts.includes(post.id)) // Exclude hidden posts
+            .map(async (post) => {
+              const postData = { ...post };
 
-            // Fetch user data
-            if (post.userId) {
-              const user = await getUserById(post.userId);
-              postData.username = user?.username || "Unknown User";
-              postData.profilePic = user?.profile_url || "/profile.webp";
-            } else {
-              postData.username = "Unknown User";
-              postData.profilePic = "/profile.webp";
-            }
+              // Fetch user data
+              if (post.userId) {
+                const user = await getUserById(post.userId);
+                postData.username = user?.username || "Unknown User";
+                postData.profilePic = user?.profile_url || "/profile.webp";
+              } else {
+                postData.username = "Unknown User";
+                postData.profilePic = "/profile.webp";
+              }
 
-            // Fetch likes count and if the current user has liked the post
-            const likesCountPromise = getLikesCount(post.id);
-            const likedPromise =
-              isAuthenticated && userId
-                ? isPostLikedByUser(post.id, userId)
-                : false;
+              // Fetch likes count and if the current user has liked the post
+              const likesCountPromise = getLikesCount(post.id);
+              const likedPromise =
+                isAuthenticated && userId
+                  ? isPostLikedByUser(post.id, userId)
+                  : false;
 
-            const [likesCount, liked] = await Promise.all([
-              likesCountPromise,
-              likedPromise,
-            ]);
-            postData.likesCount = likesCount;
-            postData.liked = liked;
+              const [likesCount, liked] = await Promise.all([
+                likesCountPromise,
+                likedPromise,
+              ]);
+              postData.likesCount = likesCount;
+              postData.liked = liked;
 
-            // Fetch comments for the post
-            const comments = await fetchCommentsForPost(post.id);
-            postData.comments = comments || [];
+              // Fetch comments for the post
+              const comments = await fetchCommentsForPost(post.id);
+              postData.comments = comments || [];
 
-            // Convert Firestore Timestamp to JavaScript Date
-            postData.createdAt = post.createdAt?.toDate;
-            if (post.createdAt && post.createdAt.toDate) {
-              // Firestore Timestamp object
-              postData.createdAt = post.createdAt.toDate();
-            } else if (post.createdAt) {
-              // Already a Date object or ISO string
-              postData.createdAt = new Date(post.createdAt);
-            } else {
-              // Fallback to current date or handle missing date
-              postData.createdAt = new Date();
-            }
+              // Convert Firestore Timestamp to JavaScript Date
+              postData.createdAt = post.createdAt?.toDate;
+              if (post.createdAt && post.createdAt.toDate) {
+                // Firestore Timestamp object
+                postData.createdAt = post.createdAt.toDate();
+              } else if (post.createdAt) {
+                // Already a Date object or ISO string
+                postData.createdAt = new Date(post.createdAt);
+              } else {
+                // Fallback to current date or handle missing date
+                postData.createdAt = new Date();
+              }
 
-            // Initialize and commentInput
-            postData.commentInput = "";
+              // Initialize and commentInput
+              postData.commentInput = "";
 
-            return postData;
-          });
+              return postData;
+            });
 
           const postsData = await Promise.all(postPromises);
           setPosts(postsData);
@@ -269,11 +331,11 @@ const Feed = () => {
     loadPosts();
   }, [isLoaded, isAuthenticated, userId, fetchPosts, getUserById]);
 
-  const addNewPost = async (newPostContent, newImageContent) => {
-    let imageUrl = null;
+  const addNewPost = async (newPostContent, newImageContents) => {
+    let imageUrls = [];
 
-    if (newImageContent) {
-      imageUrl = newImageContent;
+    if (newImageContents && newImageContents.length > 0) {
+      imageUrls = newImageContents; // Store multiple image URLs
     }
 
     if (!userId) {
@@ -284,7 +346,7 @@ const Feed = () => {
     const postDetail = {
       text: newPostContent,
       userId,
-      img_url: imageUrl,
+      img_urls: imageUrls, // Use the correct field name for multiple images
       createdAt: Timestamp.now(),
     };
 
@@ -293,12 +355,13 @@ const Feed = () => {
     const newPost = {
       id: newPostRef.id, // Use the ID from the new post reference
       text: newPostContent,
-      img_url: imageUrl || "",
+      img_urls: imageUrls || [],
       likesCount: 0,
       liked: false,
       comments: [],
       commentInput: "",
       username,
+      userId,
       profilePic: userProfilePic,
       createdAt: new Date(),
     };
@@ -378,7 +441,7 @@ const Feed = () => {
                       </div>
                     </div>
                   </div>
-                  {/* More options */}
+
                   <div className="relative options-container ml-auto">
                     <div
                       className="cursor-pointer"
@@ -393,25 +456,28 @@ const Feed = () => {
                       <div className="absolute right-0 p-2 w-48 bg-gray-700 rounded-md shadow-xl">
                         {/* Menu items */}
                         <ul className="py-1">
+                          {userId === post.userId && (
+                            <>
+                              <li
+                                className="px-4 py-2 hover:bg-gray-500 cursor-pointer rounded-2xl"
+                                onClick={() => handleEditPost(index)}
+                              >
+                                Edit Post
+                              </li>
+                              <li
+                                className="px-4 py-2 hover:bg-gray-500 cursor-pointer rounded-2xl"
+                                onClick={() => handleDeletePost(index)}
+                              >
+                                Delete Post
+                              </li>
+                            </>
+                          )}
                           <li
-                            className="px-4 py-2 hover:bg-gray-500 cursor-pointer"
-                            onClick={() => handleEditPost(index)}
-                          >
-                            Edit Post
-                          </li>
-                          <li
-                            className="px-4 py-2 hover:bg-gray-500 cursor-pointer"
+                            className="px-4 py-2 hover:bg-gray-500 cursor-pointer rounded-2xl"
                             onClick={() => handleHidePost(index)}
                           >
                             Hide Post
                           </li>
-                          <li
-                            className="px-4 py-2 hover:bg-gray-500 cursor-pointer"
-                            onClick={() => handleDeletePost(index)}
-                          >
-                            Delete Post
-                          </li>
-                          {/* Other menu items */}
                         </ul>
                       </div>
                     )}
@@ -424,13 +490,28 @@ const Feed = () => {
                 </div>
 
                 {/* Post Image */}
-                {post.img_url && (
-                  <div className="mb-4">
-                    <img
-                      src={post.img_url}
-                      alt="Post"
-                      className="w-full max-w-full h-auto max-h-96 object-contain"
-                    />
+                {post.img_urls && post.img_urls.length > 0 && (
+                  <div
+                    className={`mt-4 overflow-x-auto scrollbar-thin scrollbar-thumb-scrollbar-thumb scrollbar-track-scrollbar-track max-w-full flex gap-2 ${
+                      post.img_urls.length === 1
+                        ? "justify-center" // Center the single image
+                        : "justify-start" // For multiple images
+                    }`}
+                  >
+                    {post.img_urls.map((url, imgIndex) => (
+                      <img
+                        key={imgIndex}
+                        src={url}
+                        alt={`Post Image ${imgIndex + 1}`}
+                        className={`mb-4 object-cover rounded-md ${
+                          post.img_urls.length === 1
+                            ? "w-full h-auto" // Full width for single image
+                            : post.img_urls.length === 2
+                            ? "w-1/2 h-auto" // Half width for two images
+                            : "w-52 h-auto flex-shrink-0" // Scrollable for more than two
+                        }`}
+                      />
+                    ))}
                   </div>
                 )}
 
@@ -606,7 +687,7 @@ const Feed = () => {
               ✕
             </button>
             <CreatePost
-              textPostContent={(text, image) => addNewPost(text, image)}
+              textPostContent={(text, images) => addNewPost(text, images)}
               closePost={closeCreatePost}
             />
           </div>
@@ -659,6 +740,30 @@ const Feed = () => {
               handleComment={(commentText) =>
                 handleComment(currentPostIndex, commentText)
               }
+            />
+          </div>
+        </div>
+      )}
+
+      {showEditPostModal && postToEdit && (
+        <div
+          className="fixed inset-0 bg-gray-900 bg-opacity-70 flex justify-center items-center z-50"
+          onClick={() => setShowEditPostModal(false)}
+        >
+          <div
+            className="bg-gray-800 p-6 rounded-lg shadow-lg relative text-white"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="absolute top-2 right-2 text-gray-400 hover:text-white"
+              onClick={() => setShowEditPostModal(false)}
+            >
+              ✕
+            </button>
+            <EditPost
+              post={postToEdit}
+              onUpdate={handleUpdatePost}
+              onClose={() => setShowEditPostModal(false)}
             />
           </div>
         </div>

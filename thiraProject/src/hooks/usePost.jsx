@@ -77,18 +77,17 @@ const usePosts = () => {
   };
 
   // Update an existing post by ID
-  const updatePost = async (id, updatedData) => {
-    try {
-      const docRef = doc(db, "posts", id);
-      await updateDoc(docRef, updatedData);
-      setPosts((prev) =>
-        prev.map((post) =>
-          post.id === id ? { ...post, ...updatedData } : post
-        )
-      );
-    } catch (err) {
-      setError(err.message);
-    }
+  const updatePost = async (postId, updatedData) => {
+    // Remove any undefined fields from updatedData
+    const sanitizedData = {};
+    Object.keys(updatedData).forEach((key) => {
+      if (updatedData[key] !== undefined) {
+        sanitizedData[key] = updatedData[key];
+      }
+    });
+
+    const postRef = doc(db, "posts", postId);
+    await updateDoc(postRef, sanitizedData);
   };
 
   return {
