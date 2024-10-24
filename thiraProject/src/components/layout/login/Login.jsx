@@ -81,6 +81,7 @@ const Login = ({ onSuccess }) => {
           username,
           password,
           profile_url: "http://20.255.57.43:6969/uploads/1729786627476.jpg",
+          bio: "Default Bio",
         };
         await addUser(newUser);
 

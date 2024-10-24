@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   collection,
   getDocs,
@@ -21,133 +21,106 @@ const useUser = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Listen for authentication state changes
+  // Listen for authentication state changes and fetch user data
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setCurrentUser(user);
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        try {
+          const userDoc = await getDoc(doc(db, "users", user.uid));
+          if (userDoc.exists()) {
+            setCurrentUser({ uid: user.uid, ...userDoc.data() });
+          }
+        } catch (error) {
+          handleError(error, "Error fetching user data");
+        }
+      } else {
+        setCurrentUser(null);
+      }
       setLoading(false);
     });
 
     return () => unsubscribe();
   }, []);
 
-  // Fetch authenticated user's data
-  useEffect(() => {
-    const fetchUserData = async () => {
-      if (currentUser) {
-        setLoading(true);
-        try {
-          const userDoc = await getDoc(doc(db, "users", currentUser.uid));
-          if (userDoc.exists()) {
-            setUsers([{ id: userDoc.id, ...userDoc.data() }]);
-          }
-        } catch (err) {
-          setError(err.message);
-        } finally {
-          setLoading(false);
-        }
-      }
-    };
+  const getUserById = useCallback(async (userId) => {
+    const cachedUser = users.find((user) => user.id === userId);
+    if (cachedUser) return cachedUser;
 
-    fetchUserData();
-  }, [currentUser]);
-
-  // Add a new user
-  const addUser = async (newUser) => {
     try {
-      const docRef = await addDoc(collection(db, "users"), newUser);
-      setUsers((prev) => [...prev, { id: docRef.id, ...newUser }]);
-    } catch (err) {
-      setError(err.message);
-    }
-  };
-
-  // Get a single user by ID
-  const getUser = async (id) => {
-    try {
-      const docRef = doc(db, "users", id);
-      const docSnap = await getDoc(docRef);
+      const docSnap = await getDoc(doc(db, "users", userId));
       if (docSnap.exists()) {
-        return { id: docSnap.id, ...docSnap.data() };
-      } else {
-        throw new Error("No such document!");
-      }
-    } catch (err) {
-      setError(err.message);
-      return null;
-    }
-  };
-
-  // Delete a user by ID
-  const deleteUser = async (id) => {
-    try {
-      await deleteDoc(doc(db, "users", id));
-      setUsers((prev) => prev.filter((user) => user.id !== id));
-    } catch (err) {
-      setError(err.message);
-    }
-  };
-
-  // Update an existing user by ID
-  const updateUser = async (id, updatedData) => {
-    try {
-      const docRef = doc(db, "users", id);
-      await updateDoc(docRef, updatedData);
-      setUsers((prev) =>
-        prev.map((user) =>
-          user.id === id ? { ...user, ...updatedData } : user
-        )
-      );
-    } catch (err) {
-      setError(err.message);
-    }
-  };
-
-  // Sign out the current user
-  const signOutUser = async () => {
-    try {
-      await signOut(auth);
-      setCurrentUser(null);
-      setUsers([]); // Clear users data on sign out
-    } catch (err) {
-      setError(err.message);
-    }
-  };
-
-  const getUserByUsername = async (username) => {
-    try {
-      const q = query(
-        collection(db, "users"),
-        where("username", "==", username)
-      );
-      const querySnapshot = await getDocs(q);
-
-      if (!querySnapshot.empty) {
-        const userDoc = querySnapshot.docs[0];
-        return { id: userDoc.id, ...userDoc.data() };
-      } else {
-        console.error("No user with that username found!");
-        return null;
-      }
-    } catch (err) {
-      console.error("Error fetching user by username:", err);
-      return null;
-    }
-  };
-  const getUserById = async (userId) => {
-    try {
-      const docRef = doc(db, "users", userId);
-      const docSnap = await getDoc(docRef);
-
-      if (docSnap.exists()) {
-        return { id: docSnap.id, ...docSnap.data() };
+        const userData = { id: docSnap.id, ...docSnap.data() };
+        setUsers((prev) => [...prev, userData]);
+        return userData;
       } else {
         console.error(`No user found for userId: ${userId}`);
         return null;
       }
     } catch (err) {
-      console.error("Error fetching user by ID:", err);
+      handleError(err, "Error fetching user by ID");
       return null;
+    }
+  }, [users]);
+
+  const getUserByUsername = useCallback(async (username) => {
+    const cachedUser = users.find((user) => user.username === username);
+    if (cachedUser) return cachedUser;
+
+    try {
+      const q = query(collection(db, "users"), where("username", "==", username));
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        const userDoc = querySnapshot.docs[0];
+        const userData = { id: userDoc.id, ...userDoc.data() };
+        setUsers((prev) => [...prev, userData]);
+        return userData;
+      } else {
+        console.error("No user with that username found!");
+        return null;
+      }
+    } catch (err) {
+      handleError(err, "Error fetching user by username");
+      return null;
+    }
+  }, [users]);
+
+  const addUser = async (newUser) => {
+    try {
+      const docRef = await addDoc(collection(db, "users"), newUser);
+      setUsers((prev) => [...prev, { id: docRef.id, ...newUser }]);
+    } catch (err) {
+      handleError(err, "Error adding user");
+    }
+  };
+
+  const deleteUser = async (id) => {
+    try {
+      await deleteDoc(doc(db, "users", id));
+      setUsers((prev) => prev.filter((user) => user.id !== id));
+    } catch (err) {
+      handleError(err, "Error deleting user");
+    }
+  };
+
+  const updateUser = async (id, updatedData) => {
+    try {
+      await updateDoc(doc(db, "users", id), updatedData);
+      setUsers((prev) =>
+        prev.map((user) => (user.id === id ? { ...user, ...updatedData } : user))
+      );
+    } catch (err) {
+      handleError(err, "Error updating user");
+    }
+  };
+
+  const signOutUser = async () => {
+    try {
+      await signOut(auth);
+      setCurrentUser(null);
+      setUsers([]);
+    } catch (err) {
+      handleError(err, "Error signing out");
     }
   };
 
@@ -157,12 +130,11 @@ const useUser = () => {
     loading,
     error,
     addUser,
-    getUser,
+    getUserById,
     deleteUser,
     updateUser,
     signOutUser,
     getUserByUsername,
-    getUserById,
   };
 };
 
