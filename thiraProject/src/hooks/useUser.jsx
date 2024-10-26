@@ -124,6 +124,29 @@ const useUser = () => {
     }
   };
 
+  const getUsernamesByPartialMatch = useCallback(async (partialUsername) => {
+    try {
+      const q = query(
+        collection(db, "users"),
+        where("username", ">=", partialUsername),
+        where("username", "<=", partialUsername + '\uf8ff') // Use unicode for range
+      );
+      const querySnapshot = await getDocs(q);
+  
+      if (!querySnapshot.empty) {
+        return querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+      } else {
+        return []; // No matches found
+      }
+    } catch (err) {
+      handleError(err, "Error fetching usernames by partial match");
+      return [];
+    }
+  }, []);
+
   return {
     users,
     currentUser,
@@ -135,6 +158,7 @@ const useUser = () => {
     updateUser,
     signOutUser,
     getUserByUsername,
+    getUsernamesByPartialMatch,
   };
 };
 

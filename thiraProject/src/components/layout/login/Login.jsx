@@ -22,12 +22,37 @@ const Login = ({ onSuccess }) => {
     setSignUpError("");
   }, []);
 
+  const validatePassword = (password) => {
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecialChar = /[!@#$%^&*]/.test(password);
+    
+    if (password.length < 8) {
+      return "Password must be at least 8 characters long.";
+    }
+    if (!hasUpperCase) {
+      return "Password must contain at least one uppercase letter.";
+    }
+    if (!hasLowerCase) {
+      return "Password must contain at least one lowercase letter.";
+    }
+    if (!hasNumber) {
+      return "Password must contain at least one number.";
+    }
+    if (!hasSpecialChar) {
+      return "Password must contain at least one special character (e.g., !@#$%^&*).";
+    }
+    return null;
+  };
+
   const validateSignUp = () => {
     if (!username || !password || !confirmPassword) {
       return "All fields are required.";
     }
-    if (password.length < 6) {
-      return "Password must be at least 6 characters long.";
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      return passwordError;
     }
     if (password !== confirmPassword) {
       return "Passwords do not match.";
@@ -49,8 +74,7 @@ const Login = ({ onSuccess }) => {
       const querySnapshot = await getDocs(q);
       if (!querySnapshot.empty) {
         const userData = querySnapshot.docs[0].data();
-        const userId = querySnapshot.docs[0].id; // Get the user's ID from Firestore
-        onSuccess({ username: userData.username, userId }); // Pass both username and userId
+        onSuccess({ username: userData.username });
       } else {
         setSignInError("Incorrect username or password.");
       }
@@ -77,14 +101,8 @@ const Login = ({ onSuccess }) => {
       if (!querySnapshot.empty) {
         setSignUpError("This username has been used.");
       } else {
-        const newUser = {
-          username,
-          password,
-          profile_url: "http://20.255.57.43:6969/uploads/1729786627476.jpg",
-          bio: "Default Bio",
-        };
+        const newUser = { username, password };
         await addUser(newUser);
-
         setUsername("");
         setPassword("");
         setConfirmPassword("");
