@@ -224,6 +224,10 @@ const Feed = () => {
       // Remove the post from the posts array
       const updatedPosts = posts.filter((_, i) => i !== index);
       setPosts(updatedPosts);
+      setMoreOptionsVisible((prev) => ({
+        ...prev,
+        [index]: false,
+      }));
     } catch (error) {
       console.error("Error hiding post:", error);
       alert("An error occurred while hiding the post.");
@@ -526,14 +530,34 @@ const Feed = () => {
 
                 {/* Post Actions */}
                 <div className="border-t-2 border-gray-500 p-2 pt-4">
-                  <div className="flex space-x-4 items-end justify-between pb-2">
-                    <div className="flex flex-row gap-3">
-                      {post.likesCount > 0 && (
-                        <span className="items-end flex">
-                          {post.likesCount}{" "}
-                          {post.likesCount === 1 ? "like" : "likes"}
-                        </span>
-                      )}
+                  <div className="flex flex-row items-center justify-between">
+                    <div className="flex gap-5">
+                      <div className="flex gap-2">
+                        <div
+                          onClick={() => handleLikedToggle(index)}
+                          className="cursor-pointer hover:text-gray-600 flex items-end"
+                        >
+                          {post.liked ? (
+                            <FavoriteIcon className="text-red-600" />
+                          ) : (
+                            <FavoriteBorderIcon />
+                          )}
+                        </div>
+                        <div className="flex flex-row gap-3">
+                          {post.likesCount > 0 && (
+                            <span className="items-end flex">
+                              {post.likesCount}{" "}
+                              {post.likesCount === 1 ? "like" : ""}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <button onClick={() => showCommentPost(index)}>
+                        <div className="gap-3 flex hover:text-gray-500">
+                          Comment
+                          <ChatBubbleOutlineIcon />
+                        </div>
+                      </button>
                     </div>
                     <div
                       onClick={() => showCommentPost(index)}
@@ -546,25 +570,6 @@ const Feed = () => {
                         </div>
                       )}
                     </div>
-                  </div>
-
-                  <div className="flex flex-row items-center gap-10">
-                    <div
-                      onClick={() => handleLikedToggle(index)}
-                      className="cursor-pointer hover:text-gray-600 flex items-end"
-                    >
-                      {post.liked ? (
-                        <FavoriteIcon className="text-red-600" />
-                      ) : (
-                        <FavoriteBorderIcon />
-                      )}
-                    </div>
-                    <button onClick={() => showCommentPost(index)}>
-                      <div className="gap-3 flex hover:text-gray-500">
-                        Comment
-                        <ChatBubbleOutlineIcon />
-                      </div>
-                    </button>
                   </div>
                 </div>
 
