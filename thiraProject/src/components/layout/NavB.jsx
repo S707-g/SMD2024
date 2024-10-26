@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import SearchIcon from "@mui/icons-material/Search";
 import { Button } from "@mui/material";
@@ -8,30 +8,55 @@ import NotificationsNoneRoundedIcon from "@mui/icons-material/NotificationsNoneR
 import Logo from "/src/assets/Thira.svg";
 import Login from "./login/Login";
 import AuthContext from "../../context/AuthContext";
+import useUser from "../../hooks/useUser"; // Import the hook
 
 const NavB = () => {
-  const { isAuthenticated, login, username } = useContext(AuthContext); // Assuming `username` is available in AuthContext
+  const { isAuthenticated, login, username } = useContext(AuthContext);
+  const { getUsernamesByPartialMatch } = useUser(); // Use the hook
   const [modalLogin, setModalLogin] = useState(false);
-  const accountNavigate = useNavigate();
-  const homeNavigate = useNavigate();
+  const [searchInput, setSearchInput] = useState("");
+  const [matchingUsers, setMatchingUsers] = useState([]);
+  const navigate = useNavigate();
 
   const handleAccountClick = () => {
     if (isAuthenticated && username) {
-      accountNavigate(`/profile/${username}`);
+      navigate(`/profile/${username}`);
     } else {
       setModalLogin(true);
     }
   };
 
   const handleLogoClick = () => {
-    homeNavigate(`/`);
+    navigate(`/`);
     window.location.reload();
   };
 
   const closeModalLogin = () => setModalLogin(false);
 
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    if (searchInput.trim()) {
+      navigate(`/profile/${searchInput.trim()}`);
+      setSearchInput(""); // Clear the search input after navigating
+      setMatchingUsers([]); // Clear matching users after search
+    }
+  };
+
+  useEffect(() => {
+    const fetchMatchingUsers = async () => {
+      if (searchInput.trim().length > 0) {
+        const results = await getUsernamesByPartialMatch(searchInput);
+        setMatchingUsers(results);
+      } else {
+        setMatchingUsers([]); // Clear if input is empty
+      }
+    };
+
+    fetchMatchingUsers();
+  }, [searchInput, getUsernamesByPartialMatch]);
+
   return (
-    <div className="p-3 flex justify-between bg-gray-800 border-b-2 border-gray-500">
+    <div className="p-3 flex justify-between items-center bg-gray-800 border-b-2 border-gray-500">
       <div
         className="flex justify-center text-white cursor-pointer"
         onClick={handleLogoClick}
@@ -39,16 +64,37 @@ const NavB = () => {
         <img src={Logo} alt="Thira Logo" className="h-12 w-auto" />
       </div>
 
-      <div className="relative">
-        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-          <SearchIcon className="text-white" aria-label="Search Icon" />
-        </div>
-        <input
-          type="search"
-          id="search"
-          placeholder="Search"
-          className="bg-[#2A3236] pl-20 px-10 py-2 rounded-full text-white focus:outline-none"
-        />
+      <div className="relative flex-grow mx-4 flex justify-center"> {/* Centered Search Bar */}
+        <form onSubmit={handleSearchSubmit} className="relative w-full max-w-xs"> {/* Limiting width */}
+          <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+            <SearchIcon className="text-white" aria-label="Search Icon" />
+          </div>
+          <input
+            type="search"
+            id="search"
+            placeholder="Search profiles"
+            className="bg-[#2A3236] pl-10 pr-4 py-2 rounded-full text-white focus:outline-none w-full" 
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+          />
+          {matchingUsers.length > 0 && (
+            <ul className="absolute bg-gray-700 rounded mt-1 w-full z-10 max-h-48 overflow-y-auto"> 
+              {matchingUsers.map((user) => (
+                <li
+                  key={user.id}
+                  className="py-2 px-4 text-white hover:bg-gray-600 cursor-pointer"
+                  onClick={() => {
+                    navigate(`/profile/${user.username}`);
+                    setSearchInput(""); // Clear the input
+                    setMatchingUsers([]); // Clear the matches
+                  }}
+                >
+                  {user.username}
+                </li>
+              ))}
+            </ul>
+          )}
+        </form>
       </div>
 
       <div className="relative flex gap-3">
