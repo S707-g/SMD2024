@@ -7,6 +7,7 @@ import FavoriteIcon from "@mui/icons-material/Favorite";
 import SendIcon from "@mui/icons-material/Send";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import { formatDistanceToNow } from "date-fns";
+import DeleteIcon from "@mui/icons-material/Delete";
 import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
 import CreatePost from "./CreatePost";
 import ModalPost from "./ModalPost";
@@ -44,8 +45,12 @@ const Feed = () => {
     getLikesCount,
     deleteLikesForPost,
   } = useLikes();
-  const { addComment, fetchCommentsForPost, deleteCommentsForPost } =
-    useComments();
+  const {
+    addComment,
+    fetchCommentsForPost,
+    deleteCommentsForPost,
+    deleteComment,
+  } = useComments();
 
   const handleCreatePost = () => {
     if (isAuthenticated) {
@@ -129,6 +134,7 @@ const Feed = () => {
       const post = updatedPosts[index];
 
       // Add comment to Firestore
+
       await addComment(post.id, userId, commentText);
 
       // Fetch updated comments
@@ -137,6 +143,7 @@ const Feed = () => {
       post.commentInput = "";
 
       setPosts(updatedPosts);
+      return updatedComments;
     }
   };
 
@@ -207,6 +214,37 @@ const Feed = () => {
       console.error("Error deleting post:", error);
       alert("An error occurred while deleting the post.");
     }
+  };
+
+  const handleDeleteComment = async (postIndex, commentId) => {
+    if (!isAuthenticated) {
+      setModalLogin(true);
+      return;
+    }
+    try {
+      // Delete the comment from Firestore
+      await deleteComment(commentId);
+
+      // Update the comments array for the specific post
+      const updatedPosts = [...posts];
+      const post = updatedPosts[postIndex];
+      post.comments = post.comments.filter(
+        (comment) => comment.id !== commentId
+      );
+
+      setPosts(updatedPosts);
+    } catch (error) {
+      console.error("Error deleting comment:", error);
+      alert("An error occurred while deleting the comment.");
+    }
+  };
+
+  const updateCommentsForPost = (postId, updatedComments) => {
+    setPosts((prevPosts) =>
+      prevPosts.map((post) =>
+        post.id === postId ? { ...post, comments: updatedComments } : post
+      )
+    );
   };
 
   const handleHidePost = async (index) => {
@@ -583,7 +621,7 @@ const Feed = () => {
                         .map((comment) => (
                           <div
                             key={comment.id}
-                            className="bg-gray-700 p-2 rounded-lg mt-2 flex items-start"
+                            className="bg-gray-700 p-2 rounded-lg mt-2 flex items-start relative"
                           >
                             {/* User Profile Picture */}
                             <img
@@ -611,8 +649,21 @@ const Feed = () => {
                                 {comment.text}
                               </div>
                             </div>
+
+                            {/* Delete Button for User's Own Comments */}
+                            {comment.userId === userId && (
+                              <button
+                                className="absolute top-2 right-2 text-gray-400 hover:text-white"
+                                onClick={() =>
+                                  handleDeleteComment(index, comment.id)
+                                }
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </button>
+                            )}
                           </div>
                         ))}
+
                     <div className="flex flex-row gap-3 mt-2">
                       <div
                         className="flex  cursor-pointer"
@@ -754,6 +805,7 @@ const Feed = () => {
               handleComment={(commentText) =>
                 handleComment(currentPostIndex, commentText)
               }
+              updateCommentsForPost={updateCommentsForPost} 
             />
           </div>
         </div>

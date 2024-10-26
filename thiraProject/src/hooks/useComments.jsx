@@ -7,12 +7,15 @@ import {
   orderBy,
   Timestamp,
   writeBatch,
+  deleteDoc,
+  doc, // Make sure to import `doc`
 } from "firebase/firestore";
 import db from "../database/FirebaseConfig";
 import useUser from "./useUser";
 
 const useComments = () => {
   const { getUserById } = useUser();
+
   // Function to add a comment to a post
   const addComment = async (postId, userId, text) => {
     await addDoc(collection(db, "comments"), {
@@ -73,10 +76,22 @@ const useComments = () => {
     }
   };
 
+  const deleteComment = async (commentId) => {
+    try {
+      const commentRef = doc(db, "comments", commentId);
+      await deleteDoc(commentRef);
+      console.log(`Comment with ID ${commentId} deleted successfully.`);
+    } catch (error) {
+      console.error("Error deleting comment:", error);
+      throw error;
+    }
+  };
+
   return {
     addComment,
     fetchCommentsForPost,
-    deleteCommentsForPost
+    deleteCommentsForPost,
+    deleteComment,
   };
 };
 
