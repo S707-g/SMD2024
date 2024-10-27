@@ -3,7 +3,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import {
   TextField,
   Button,
-  ListItemText,
   Avatar,
   IconButton,
   Modal,
@@ -92,8 +91,8 @@ const ChatWindow = () => {
   }, [messages]);
 
   const handleImageClick = (imageUrl) => {
-    setModalImageUrl(imageUrl); // Set the image URL
-    setModalVisible(true); // Open the modal
+    setModalImageUrl(imageUrl);
+    setModalVisible(true);
   };
 
   const handleEmojiClick = (emojiObject, event) => {
@@ -160,222 +159,162 @@ const ChatWindow = () => {
   };
 
   return (
-    <>
-      <h2
-        className="text-lg font-semibold mb-2 sticky top-0 bg-gray-800 p-4 z-10 flex justify-between items-center"
-        style={{ height: "64px" }}
-      >
-        <div>
-          <span className="text-gray-200">Chat with </span>{" "}
-          <span
-            onClick={() =>
-              handleProfileClick(otherUser?.id, otherUser?.username)
-            }
-            className="cursor-pointer text-blue-400"
-          >
-            {otherUser?.username || "User"}
-          </span>
-        </div>
-        <div>
+    <div className="flex flex-col h-screen bg-gray-900">
+      {/* Header */}
+      <div className="sticky top-0 z-10">
+        <div className="flex items-center justify-between p-4 bg-gray-900">
+          <div className="flex items-center">
+            <Avatar
+              src={otherUser?.profile_url || "/defaultProfile.webp"}
+              alt="User Avatar"
+              className="mr-3 cursor-pointer"
+              onClick={() =>
+                handleProfileClick(otherUser?.id, otherUser?.username)
+              }
+            />
+            <div>
+              <h2 className="text-lg font-semibold text-white">
+                {otherUser?.username || "User"}
+              </h2>
+            </div>
+          </div>
           <IconButton
             color="primary"
             onClick={() => handleCallClick(otherUser?.id)}
-            className="ml-4"
           >
-            <CallIcon />
+            <CallIcon className="text-white" />
           </IconButton>
         </div>
-      </h2>
+      </div>
 
-      <div className="pt-4 px-3 flex flex-col h-[calc(100vh-128px)] bg-gray-800">
-        <div className="overflow-y-auto flex-grow my-3 p-4 scrollbar-thin scrollbar-thumb-scrollbar-thumb scrollbar-track-gray-800 w-full">
-          <div className="space-y-3">
-            {messages.map((message, index) => {
-              const isOwnMessage = message.senderId === userId;
-              const isLastMessage = index === messages.length - 1;
-              return (
-                <div
-                  key={message.id}
-                  ref={isLastMessage ? lastMessageRef : null}
-                  className={`group flex ${
-                    isOwnMessage ? "justify-end" : "justify-start"
-                  }`}
-                >
-                  <Tooltip
-                    title={
-                      message.timestamp
-                        ? format(message.timestamp.toDate(), "PPpp")
-                        : ""
-                    }
-                    placement="top"
-                    arrow
-                  >
-                    <div
-                      className={`flex items-end ${
-                        isOwnMessage ? "flex-row" : "flex-row"
-                      } max-w-[85%] sm:max-w-[70%] lg:max-w-[60%]`}
-                    >
-                      {/* Existing message content */}
-                      <div
-                        className={`${
-                          isOwnMessage
-                            ? "bg-gray-300 text-black text-right order-1"
-                            : "bg-gray-500 text-left text-white order-2"
-                        } p-2 rounded-lg max-w-full break-words text-sm relative`}
-                        style={{ marginRight: isOwnMessage ? "0.5rem" : "0" }}
-                      >
-                        {Array.isArray(message.images) &&
-                          message.images.length > 0 && (
-                            <div
-                              className={`flex flex-col gap-2 ${
-                                isOwnMessage ? "items-end" : "items-start"
-                              }`}
-                            >
-                              {message.images.map((imageUrl, idx) => (
-                                <img
-                                  key={idx}
-                                  src={imageUrl}
-                                  alt={`Sent ${idx}`}
-                                  className="rounded-lg cursor-pointer"
-                                  style={{
-                                    maxWidth: "200px",
-                                    maxHeight: "200px",
-                                    width: "auto",
-                                    height: "auto",
-                                  }}
-                                  onClick={() => handleImageClick(imageUrl)}
-                                />
-                              ))}
-                            </div>
-                          )}
-                        {message.text && (
-                          <ListItemText primary={message.text} />
-                        )}
-                      </div>
-                      <Avatar
-                        src={
-                          isOwnMessage
-                            ? "/myAvatar.png"
-                            : otherUser?.profile_url || "/defaultProfile.webp"
-                        }
-                        alt="User Avatar"
-                        className={`m-1 cursor-pointer w-10 h-10 sm:w-8 sm:h-8 ${
-                          isOwnMessage ? "order-2" : ""
-                        }`}
-                        onClick={() =>
-                          handleProfileClick(
-                            isOwnMessage ? userId : otherUser?.id,
-                            isOwnMessage ? currentUsername : otherUser?.username
-                          )
-                        }
-                        style={{
-                          marginLeft: isOwnMessage ? "0.5rem" : "0",
-                          marginRight: !isOwnMessage ? "0.5rem" : "0",
-                        }}
-                      />
-                    </div>
-                  </Tooltip>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* modal for full image */}
-        <Modal
-          open={modalVisible}
-          onClose={() => setModalVisible(false)}
-          aria-labelledby="image-modal"
-          aria-describedby="modal-to-display-full-image"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            outline: "none", // Remove any outline from the modal
-          }}
-        >
-          <Box
-            sx={{
-              backgroundColor: "transparent",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              outline: "none", // Remove any outline from the Box
-              border: "none", // Ensure no border is present
-            }}
-          >
-            <img
-              src={modalImageUrl}
-              alt="Full Size"
-              style={{
-                maxWidth: "90vw",
-                maxHeight: "90vh",
-                objectFit: "contain",
-              }}
-            />
-          </Box>
-        </Modal>
-
-        {/* Sticky Input Section */}
-        <div
-          className="sticky bottom-0 bg-gray-800 p-4 border-t border-gray-300 w-full flex flex-col items-center space-y-2"
-          style={{ height: "64px" }} // Set a fixed height for the input section
-        >
-          {imagePreviews.length > 0 && (
-            <div className="w-full flex gap-2 overflow-x-auto p-2 bg-gray-600 rounded-md">
-              {imagePreviews.map((preview, index) => (
-                <div key={index} className="relative">
-                  <img
-                    src={preview}
-                    alt={`Preview ${index + 1}`}
-                    className="w-32 h-32 object-cover rounded-md"
-                  />
-                  <button
-                    onClick={() => handleRemoveImage(index)}
-                    className="absolute top-2 right-2 bg-gray-800 text-white rounded-full p-1"
-                  >
-                    <DeleteIcon fontSize="small" />
-                  </button>
-                </div>
-              ))}
-              {/* Add the button to upload more images */}
-              <IconButton
-                color="primary"
-                component="label"
-                className="flex-shrink-0"
-              >
-                <PhotoCamera />
-                <input
-                  accept="image/*"
-                  type="file"
-                  multiple
-                  onChange={handleMoreFilesChange} // New handler function for additional files
-                  style={{ display: "none" }}
-                />
-              </IconButton>
-            </div>
-          )}
-
-          {/* Input and Controls */}
-          <div className="w-full flex items-center space-x-2 ">
-            <IconButton onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
-              <EmojiEmotionsIcon
-                sx={{ color: showEmojiPicker ? "blue" : "gray" }}
-              />
-            </IconButton>
-            {/* Emoji Input */}
-            {showEmojiPicker && (
+      {/* Messages */}
+      <div className="flex-grow overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-900">
+        <div className="space-y-4">
+          {messages.map((message, index) => {
+            const isOwnMessage = message.senderId === userId;
+            const isLastMessage = index === messages.length - 1;
+            return (
               <div
-                className="absolute bottom-16 left-4 bg-white shadow-lg rounded-lg z-10 p-2"
-                ref={emojiPickerRef}
+                key={message.id}
+                ref={isLastMessage ? lastMessageRef : null}
+                className={`flex ${
+                  isOwnMessage ? "justify-end" : "justify-start"
+                }`}
               >
-                <Picker onEmojiClick={handleEmojiClick} />
+                <Tooltip
+                  title={
+                    message.timestamp
+                      ? format(message.timestamp.toDate(), "PPpp")
+                      : ""
+                  }
+                  placement="top"
+                  arrow
+                >
+                  <div
+                    className={`flex items-end max-w-xs sm:max-w-sm ${
+                      isOwnMessage ? "flex-row-reverse" : ""
+                    }`}
+                  >
+                    <Avatar
+                      src={
+                        isOwnMessage
+                          ? "/myAvatar.png"
+                          : otherUser?.profile_url || "/defaultProfile.webp"
+                      }
+                      alt="User Avatar"
+                      className="w-10 h-10 sm:w-8 sm:h-8 cursor-pointer"
+                      onClick={() =>
+                        handleProfileClick(
+                          isOwnMessage ? userId : otherUser?.id,
+                          isOwnMessage ? currentUsername : otherUser?.username
+                        )
+                      }
+                    />
+                    <div
+                      className={`${
+                        isOwnMessage
+                          ? "bg-blue-500 text-white"
+                          : "bg-gray-700 text-white"
+                      } p-3 rounded-lg mx-2`}
+                    >
+                      {Array.isArray(message.images) &&
+                        message.images.length > 0 && (
+                          <div className="flex flex-col gap-2">
+                            {message.images.map((imageUrl, idx) => (
+                              <img
+                                key={idx}
+                                src={imageUrl}
+                                alt={`Sent ${idx}`}
+                                className="rounded-lg cursor-pointer"
+                                style={{
+                                  maxWidth: "200px",
+                                  maxHeight: "200px",
+                                  width: "auto",
+                                  height: "auto",
+                                }}
+                                onClick={() => handleImageClick(imageUrl)}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      {message.text && (
+                        <p className="text-sm break-all">{message.text}</p>
+                      )}
+                    </div>
+                  </div>
+                </Tooltip>
               </div>
-            )}
+            );
+          })}
+        </div>
+      </div>
 
-            {/* Image Upload Input and Icon */}
-            <IconButton color="primary" component="label">
-              <PhotoCamera />
+      {/* Image Modal */}
+      <Modal
+        open={modalVisible}
+        onClose={() => setModalVisible(false)}
+        aria-labelledby="image-modal"
+        aria-describedby="modal-to-display-full-image"
+        className="flex items-center justify-center"
+      >
+        <Box className="outline-none">
+          <img
+            src={modalImageUrl}
+            alt="Full Size"
+            style={{
+              maxWidth: "90vw",
+              maxHeight: "90vh",
+              objectFit: "contain",
+            }}
+          />
+        </Box>
+      </Modal>
+
+      {/* Input Section */}
+      <div className="p-4 bg-gray-800">
+        {imagePreviews.length > 0 && (
+          <div className="flex gap-2 overflow-x-auto mb-2">
+            {imagePreviews.map((preview, index) => (
+              <div key={index} className="relative">
+                <img
+                  src={preview}
+                  alt={`Preview ${index + 1}`}
+                  className="w-24 h-24 object-cover rounded-md"
+                />
+                <button
+                  onClick={() => handleRemoveImage(index)}
+                  className="absolute top-1 right-1 bg-gray-900 text-white rounded-full p-1"
+                >
+                  <DeleteIcon fontSize="small" />
+                </button>
+              </div>
+            ))}
+            <IconButton
+              color="primary"
+              component="label"
+              className="flex-shrink-0"
+            >
+              <PhotoCamera className="text-white" />
               <input
                 accept="image/*"
                 type="file"
@@ -384,34 +323,76 @@ const ChatWindow = () => {
                 style={{ display: "none" }}
               />
             </IconButton>
-
-            <TextField
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              placeholder="Type your message..."
-              fullWidth
-              multiline
-              variant="outlined"
-              className="bg-gray-100 rounded-lg"
-              InputProps={{
-                style: {
-                  padding: "10px",
-                },
-              }}
-            />
-
-            <Button
-              onClick={handleSendMessage}
-              variant="contained"
-              color="primary"
-              className="ml-2"
-            >
-              {selectedFiles.length > 0 ? "Send Images" : "Send"}
-            </Button>
           </div>
+        )}
+
+        <div className="flex items-center space-x-2">
+          <div className="relative">
+            <IconButton onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
+              <EmojiEmotionsIcon
+                sx={{ color: showEmojiPicker ? "yellow" : "white" }}
+              />
+            </IconButton>
+            {showEmojiPicker && (
+              <div
+                className="absolute bottom-full mb-2 left-0 z-50"
+                ref={emojiPickerRef}
+              >
+                <Picker onEmojiClick={handleEmojiClick} />
+              </div>
+            )}
+          </div>
+
+          <IconButton color="primary" component="label">
+            <PhotoCamera className="text-white" />
+            <input
+              accept="image/*"
+              type="file"
+              multiple
+              onChange={handleMoreFilesChange}
+              style={{ display: "none" }}
+            />
+          </IconButton>
+
+          <TextField
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            placeholder="Type your message..."
+            multiline
+            variant="outlined"
+            className="flex-grow bg-gray-700 rounded-lg overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-700"
+            InputProps={{
+              style: {
+                color: "white",
+                padding: "10px",
+                maxHeight: "150px",
+              },
+              onKeyDown: (e) => {
+                if (e.key === "Enter") {
+                  if (e.shiftKey) {
+                    // Shift + Enter: Add a new line
+                    e.stopPropagation();
+                    return; // Let the default behavior happen (newline)
+                  } else {
+                    // Enter without Shift: Send the message
+                    e.preventDefault(); // Prevent the newline behavior
+                    handleSendMessage(); // Call the function to send the message
+                  }
+                }
+              },
+            }}
+          />
+
+          <Button
+            onClick={handleSendMessage}
+            variant="contained"
+            color="primary"
+          >
+            {selectedFiles.length > 0 ? "Send Images" : "Send"}
+          </Button>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 
