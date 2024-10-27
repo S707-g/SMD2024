@@ -80,7 +80,7 @@ const useChat = () => {
         const newChatRef = await addDoc(chatsRef, {
           users: [userId, otherUserId],
           lastMessage: "",
-          lastMessageTimestamp: null,
+          lastMessageTimestamp: Timestamp.now(), // Set to current timestamp
         });
         chatId = newChatRef.id;
       }
@@ -114,7 +114,7 @@ const useChat = () => {
     const messageData = {
       senderId: userId,
       text,
-      timestamp: new Date(),
+      timestamp: Timestamp.now(),
     };
 
     // Include images if they exist
@@ -124,6 +124,13 @@ const useChat = () => {
 
     // Save the message to the database
     await addDoc(collection(db, "chats", chatId, "messages"), messageData);
+
+    // Update the chat's last message and timestamp
+    const chatRef = doc(db, "chats", chatId);
+    await updateDoc(chatRef, {
+      lastMessage: text,
+      lastMessageTimestamp: Timestamp.now(),
+    });
   };
 
   return {
