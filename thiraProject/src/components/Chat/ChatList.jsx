@@ -6,7 +6,7 @@ import {
   Avatar,
   Typography,
 } from "@mui/material";
-import { formatDistanceToNow } from "date-fns"; // Import from date-fns
+import { formatDistanceToNow } from "date-fns";
 import AuthContext from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import useChat from "../../hooks/useChat";
@@ -44,14 +44,20 @@ const ChatList = () => {
   };
 
   // Function to format the last message display
-  const formatLastMessage = (lastMessage) => {
+  const formatLastMessage = (username, lastMessage) => {
     if (!lastMessage) {
       return "No messages yet.";
     }
     if (isUrl(lastMessage)) {
       return isImageUrl(lastMessage) ? "Image sent" : "File sent";
     }
-    return lastMessage;
+    // Truncate message if too long
+    const maxLength = 30;
+    const truncatedMessage =
+      lastMessage.length > maxLength
+        ? `${lastMessage.substring(0, maxLength)}...`
+        : lastMessage;
+    return `${username}: ${truncatedMessage}`;
   };
 
   return (
@@ -82,7 +88,7 @@ const ChatList = () => {
                     <span className="text-white font-medium text-lg">
                       {chat.otherUser?.username || "Unknown User"}
                     </span>
-                    <span className="text-sm text-gray-400">
+                    <span className="text-sm text-gray-400 break-words">
                       {chat.lastMessageTimestamp &&
                         new Date(
                           chat.lastMessageTimestamp.toDate()
@@ -92,14 +98,27 @@ const ChatList = () => {
                 }
                 secondary={
                   <div className="flex justify-between items-center mt-1">
-                    <span className="text-gray-400">
-                      {formatLastMessage(chat.lastMessage)}
+                    <span
+                      className="text-gray-400 truncate"
+                      style={{
+                        display: "-webkit-box",
+                        WebkitLineClamp: 1,
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden",
+                      }}
+                    >
+                      {formatLastMessage(
+                        chat.otherUser?.username || "User",
+                        chat.lastMessage
+                      )}
                     </span>
                     <span className="text-xs text-gray-500">
                       {chat.lastMessageTimestamp &&
                         formatDistanceToNow(
                           chat.lastMessageTimestamp.toDate(),
-                          { addSuffix: true }
+                          {
+                            addSuffix: true,
+                          }
                         )}
                     </span>
                   </div>
