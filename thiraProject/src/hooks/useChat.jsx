@@ -7,20 +7,19 @@ import {
   orderBy,
   addDoc,
   getDocs,
-  getDoc,
   updateDoc,
   doc,
   Timestamp,
 } from "firebase/firestore";
 import db from "../database/FirebaseConfig";
-import AuthContext from "../context/AuthContext"; // Ensure AuthContext is properly imported
+import AuthContext from "../context/AuthContext";
 import useUser from "./useUser";
 
 const useChat = () => {
-  const { userId } = useContext(AuthContext); // Access the current user ID
+  const { userId } = useContext(AuthContext);
   const [chats, setChats] = useState([]);
   const [messages, setMessages] = useState([]);
-  const { getUserById } = useUser(); // Assuming this retrieves user data
+  const { getUserById } = useUser();
 
   // Fetch all chats for the current user
   const fetchChats = useCallback(() => {
@@ -34,9 +33,9 @@ const useChat = () => {
     );
 
     const unsubscribe = onSnapshot(q, async (snapshot) => {
-      const chatPromises = snapshot.docs.map(async (doc) => {
-        const data = doc.data();
-        const chatId = doc.id;
+      const chatPromises = snapshot.docs.map(async (chatDoc) => {
+        const data = chatDoc.data();
+        const chatId = chatDoc.id;
         const otherUserId = data.users.find((id) => id !== userId);
         const otherUserData = await getUserById(otherUserId);
 
@@ -67,13 +66,13 @@ const useChat = () => {
       const querySnapshot = await getDocs(existingChatQuery);
 
       let chatId = null;
-      querySnapshot.forEach((doc) => {
-        const chatData = doc.data();
+      querySnapshot.forEach((chatDoc) => {
+        const chatData = chatDoc.data();
         if (
           chatData.users.includes(userId) &&
           chatData.users.includes(otherUserId)
         ) {
-          chatId = doc.id; // Chat already exists
+          chatId = chatDoc.id;
         }
       });
 
@@ -93,6 +92,8 @@ const useChat = () => {
 
   // Fetch messages for a specific chat
   const fetchMessages = useCallback((chatId) => {
+    if (!chatId) return;
+
     const messagesRef = collection(db, "chats", chatId, "messages");
     const q = query(messagesRef, orderBy("timestamp"));
 
@@ -101,6 +102,7 @@ const useChat = () => {
         id: doc.id,
         ...doc.data(),
       }));
+      console.log("Fetched messages:", msgs);
       setMessages(msgs);
     });
 
@@ -108,26 +110,21 @@ const useChat = () => {
   }, []);
 
   // Send a message in a specific chat
-  const sendMessage = useCallback(
-    async (chatId, messageText) => {
-      if (!messageText.trim()) return;
+  const sendMessage = async (chatId, text, images = []) => {
+    const messageData = {
+      senderId: userId,
+      text,
+      timestamp: new Date(),
+    };
 
-      const messagesRef = collection(db, "chats", chatId, "messages");
-      await addDoc(messagesRef, {
-        senderId: userId,
-        text: messageText,
-        timestamp: Timestamp.now(),
-      });
-
-      // Update the chat's last message
-      const chatDocRef = doc(db, "chats", chatId);
-      await updateDoc(chatDocRef, {
-        lastMessage: messageText,
-        lastMessageTimestamp: Timestamp.now(),
-      });
-    },
-    [userId]
-  );
+    // Include images if they exist
+    if (images.length > 0) {
+      messageData.images = images;
+    }
+    console.log("Message data being sent:", messageData);
+    // Save the message to the database
+    await addDoc(collection(db, "chats", chatId, "messages"), messageData);
+  };
 
   return {
     chats,

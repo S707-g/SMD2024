@@ -11,6 +11,7 @@ export const useUpload = () => {
         body: formData,
       });
       const data = await response.json();
+      console.log("Upload response data:", data);
       return { data, status: response.status };
     } catch (e) {
       console.error("Upload failed:", e);
