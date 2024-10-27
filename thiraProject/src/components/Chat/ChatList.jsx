@@ -45,6 +45,9 @@ const ChatList = () => {
 
   // Function to format the last message display
   const formatLastMessage = (lastMessage) => {
+    if (!lastMessage) {
+      return "No messages yet.";
+    }
     if (isUrl(lastMessage)) {
       return isImageUrl(lastMessage) ? "Image sent" : "File sent";
     }
@@ -52,34 +55,34 @@ const ChatList = () => {
   };
 
   return (
-    <div className="p-4">
-      <Typography variant="h4" gutterBottom>
-        Your Chats
-      </Typography>
+    <div className="p-6 bg-gray-900 min-h-screen">
+      <h2 className="text-3xl font-semibold text-white mb-6">Your Chats</h2>
       {chats.length === 0 ? (
-        <Typography variant="body1">You have no chats yet.</Typography>
+        <Typography variant="body1" className="text-gray-400">
+          You have no chats yet.
+        </Typography>
       ) : (
-        <List>
+        <List className="space-y-2">
           {chats.map((chat) => (
             <ListItem
               button
               component="div"
               key={chat.id}
               onClick={() => handleChatClick(chat.otherUser.id)}
-              alignItems="flex-start"
+              className="bg-gray-800 rounded-lg p-4 hover:bg-gray-700 transition-colors"
             >
               <Avatar
                 src={chat.otherUser?.profile_url || "/defaultProfile.webp"}
                 alt={chat.otherUser?.username || "User"}
-                className="mr-3"
+                className="mr-4"
               />
               <ListItemText
                 primary={
-                  <div
-                    style={{ display: "flex", justifyContent: "space-between" }}
-                  >
-                    <span>{chat.otherUser?.username || "Unknown User"}</span>
-                    <span style={{ fontSize: "0.8rem", color: "gray" }}>
+                  <div className="flex justify-between items-center">
+                    <span className="text-white font-medium text-lg">
+                      {chat.otherUser?.username || "Unknown User"}
+                    </span>
+                    <span className="text-sm text-gray-400">
                       {chat.lastMessageTimestamp &&
                         new Date(
                           chat.lastMessageTimestamp.toDate()
@@ -88,33 +91,18 @@ const ChatList = () => {
                   </div>
                 }
                 secondary={
-                  <>
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                      }}
-                    >
-                      <span>
-                        {formatLastMessage(chat.lastMessage) ||
-                          "No messages yet."}
-                      </span>
-                      <span
-                        style={{
-                          fontSize: "0.75rem",
-                          color: "gray",
-                          textAlign: "right",
-                        }}
-                      >
-                        {chat.lastMessageTimestamp &&
-                          formatDistanceToNow(
-                            chat.lastMessageTimestamp.toDate(),
-                            { addSuffix: true }
-                          )}
-                      </span>
-                    </div>
-                  </>
+                  <div className="flex justify-between items-center mt-1">
+                    <span className="text-gray-400">
+                      {formatLastMessage(chat.lastMessage)}
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      {chat.lastMessageTimestamp &&
+                        formatDistanceToNow(
+                          chat.lastMessageTimestamp.toDate(),
+                          { addSuffix: true }
+                        )}
+                    </span>
+                  </div>
                 }
               />
             </ListItem>
