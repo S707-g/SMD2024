@@ -422,7 +422,7 @@ const Feed = () => {
   };
 
   return (
-    <div className="flex flex-col text-white">
+    <div className="flex flex-col text-white h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-900">
       <div className="flex flex-row p-3 items-center">
         <div
           className="flex items-center cursor-pointer"
