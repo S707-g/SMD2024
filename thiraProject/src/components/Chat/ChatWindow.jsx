@@ -34,10 +34,8 @@ const ChatWindow = () => {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
   const [modalImageUrl, setModalImageUrl] = useState("");
-  const [hoveredMessageId, setHoveredMessageId] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [modalPosition, setModalPosition] = useState({ top: 0, left: 0 });
   const emojiPickerRef = useRef(null);
   const navigate = useNavigate();
   const lastMessageRef = useRef(null);
@@ -67,6 +65,27 @@ const ChatWindow = () => {
   }, [chatId, userId, getUserById]);
 
   useEffect(() => {
+    function handleClickOutside(event) {
+      if (
+        emojiPickerRef.current &&
+        !emojiPickerRef.current.contains(event.target)
+      ) {
+        setShowEmojiPicker(false);
+      }
+    }
+
+    if (showEmojiPicker) {
+      document.addEventListener("mousedown", handleClickOutside);
+    } else {
+      document.removeEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showEmojiPicker]);
+
+  useEffect(() => {
     if (lastMessageRef.current) {
       lastMessageRef.current.scrollIntoView({ behavior: "smooth" });
     }
@@ -77,18 +96,8 @@ const ChatWindow = () => {
     setModalVisible(true); // Open the modal
   };
 
-  const handleMouseEnter = (timestamp, event) => {
-    setHoveredMessageTimestamp(timestamp);
-    setTimestampModalVisible(true);
-    const rect = event.target.getBoundingClientRect();
-    setModalPosition({
-      top: rect.top - 40,
-      left: rect.left + rect.width / 2,
-    });
-  };
-
-  const handleMouseLeave = () => {
-    setTimestampModalVisible(false);
+  const handleEmojiClick = (emojiObject, event) => {
+    setNewMessage((prevMessage) => prevMessage + emojiObject.emoji);
   };
 
   const handleImageUpload = async () => {
@@ -350,8 +359,11 @@ const ChatWindow = () => {
           {/* Input and Controls */}
           <div className="w-full flex items-center space-x-2 ">
             <IconButton onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
-              <EmojiEmotionsIcon />
+              <EmojiEmotionsIcon
+                sx={{ color: showEmojiPicker ? "blue" : "gray" }}
+              />
             </IconButton>
+            {/* Emoji Input */}
             {showEmojiPicker && (
               <div
                 className="absolute bottom-16 left-4 bg-white shadow-lg rounded-lg z-10 p-2"
