@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+
 export const useUpload = () => {
   const upload = useCallback(async (file) => {
     try {
@@ -11,8 +12,12 @@ export const useUpload = () => {
       });
       const data = await response.json();
       return { data, status: response.status };
-    } catch (e) {}
+    } catch (e) {
+      console.error("Upload failed:", e);
+      throw e;
+    }
   }, []);
+
   return {
     upload,
   };

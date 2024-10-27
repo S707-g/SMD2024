@@ -3,6 +3,7 @@ import { Button, TextField } from "@mui/material";
 import MoonLoader from "react-spinners/MoonLoader";
 import { Timestamp } from "firebase/firestore";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
+import { useNavigate } from "react-router-dom";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import SendIcon from "@mui/icons-material/Send";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
@@ -34,6 +35,7 @@ const Feed = () => {
   const [currentPostIndex, setCurrentPostIndex] = useState(null);
   const [commentsVisibility, setCommentsVisibility] = useState({});
   const [isLoaded, setIsLoaded] = useState(false);
+  const navigate = useNavigate();
 
   const { getUserByUsername, getUserById } = useUser();
   const { addPost, fetchPosts, deletePost, updatePost } = usePosts();
@@ -427,7 +429,7 @@ const Feed = () => {
           onClick={() => {
             if (isAuthenticated) {
               // Redirect to the profile page if authenticated
-              window.location.href = `/profile/${username}`;
+              navigate(`/profile/${post.username}`);
             } else {
               // Show login modal if not authenticated
               setModalLogin(true);
@@ -466,7 +468,7 @@ const Feed = () => {
                     onClick={() => {
                       if (isAuthenticated) {
                         // Redirect to the profile page if authenticated
-                        window.location.href = `/profile/${post.username}`;
+                        navigate(`/profile/${post.username}`);
                       } else {
                         // Show login modal if not authenticated
                         setModalLogin(true);
@@ -670,7 +672,7 @@ const Feed = () => {
                         onClick={() => {
                           if (isAuthenticated) {
                             // Redirect to the profile page if authenticated
-                            window.location.href = `/profile/${username}`;
+                            navigate(`/profile/${post.username}`);
                           } else {
                             // Show login modal if not authenticated
                             setModalLogin(true);
@@ -805,7 +807,7 @@ const Feed = () => {
               handleComment={(commentText) =>
                 handleComment(currentPostIndex, commentText)
               }
-              updateCommentsForPost={updateCommentsForPost} 
+              updateCommentsForPost={updateCommentsForPost}
             />
           </div>
         </div>
