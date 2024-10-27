@@ -5,21 +5,33 @@ import PeopleIcon from "@mui/icons-material/People";
 import BookmarkIcon from "@mui/icons-material/Bookmark";
 import SendIcon from "@mui/icons-material/Send";
 import ExitToAppIcon from "@mui/icons-material/ExitToApp";
+import ChatIcon from "@mui/icons-material/Chat";
 import AuthContext from "../../context/AuthContext"; // Adjust the path based on your file structure
 import { Navigate, useNavigate } from "react-router-dom";
-import ChatIcon from "@mui/icons-material/Chat";
+import Login from "../layout/login/Login"; // Import the Login component
 
 const SideBarLeft = ({ onLogout }) => {
-  const { isAuthenticated, logout } = useContext(AuthContext);
+  const { isAuthenticated, login, logout } = useContext(AuthContext);
+  const [modalLogin, setModalLogin] = useState(false); // State for login modal
   const [modalLogout, setModalLogout] = useState(false);
   const navigate = useNavigate();
 
   const handleHomeClick = () => {
+    if (!isAuthenticated) {
+      setModalLogin(true);
+      return;
+    }
+
     navigate("/");
     window.location.reload();
   };
 
   const handleChatClick = () => {
+    if (!isAuthenticated) {
+      setModalLogin(true);
+      return;
+    }
+
     navigate("/chat"); // Navigate to the chat list route
   };
 
@@ -73,6 +85,33 @@ const SideBarLeft = ({ onLogout }) => {
         </div>
       )}
 
+      {/* Login Modal */}
+      {modalLogin && (
+        <div
+          className="fixed inset-0 bg-gray-900 bg-opacity-70 flex justify-center items-center z-50"
+          onClick={() => setModalLogin(false)}
+        >
+          <div
+            className="bg-gray-800 p-6 rounded-lg shadow-lg relative text-white"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="absolute top-2 right-2 text-gray-400 hover:text-white"
+              onClick={() => setModalLogin(false)}
+            >
+              ✕
+            </button>
+            <Login
+              onSuccess={(user) => {
+                login(user.username); // Log the user in
+                setModalLogin(false); // Close the login modal
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Logout Modal */}
       {modalLogout && (
         <div className="fixed inset-0 bg-gray-900 bg-opacity-70 flex justify-center items-center z-50">
           <div
