@@ -7,15 +7,20 @@ import SendIcon from "@mui/icons-material/Send";
 import ExitToAppIcon from "@mui/icons-material/ExitToApp";
 import AuthContext from "../../context/AuthContext"; // Adjust the path based on your file structure
 import { Navigate, useNavigate } from "react-router-dom";
+import ChatIcon from "@mui/icons-material/Chat";
 
 const SideBarLeft = ({ onLogout }) => {
   const { isAuthenticated, logout } = useContext(AuthContext);
   const [modalLogout, setModalLogout] = useState(false);
-  const homeNavigate = useNavigate();
+  const navigate = useNavigate();
 
   const handleHomeClick = () => {
-    homeNavigate(`/`);
+    navigate("/");
     window.location.reload();
+  };
+
+  const handleChatClick = () => {
+    navigate("/chat"); // Navigate to the chat list route
   };
 
   const handleModalLogout = () => {
@@ -54,6 +59,7 @@ const SideBarLeft = ({ onLogout }) => {
         <NavButton Icon={PeopleIcon} label="Friends" />
         <NavButton Icon={BookmarkIcon} label="Bookmarks" />
         <NavButton Icon={SendIcon} label="Post" />
+        <NavButton Icon={ChatIcon} label="Chat" onClick={handleChatClick} />
       </div>
 
       {/* Conditional rendering of the Logout button based on isAuthenticated */}
