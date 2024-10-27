@@ -121,7 +121,7 @@ const useChat = () => {
     if (images.length > 0) {
       messageData.images = images;
     }
-    console.log("Message data being sent:", messageData);
+
     // Save the message to the database
     await addDoc(collection(db, "chats", chatId, "messages"), messageData);
   };

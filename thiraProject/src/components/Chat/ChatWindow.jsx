@@ -3,15 +3,16 @@ import { useParams, useNavigate } from "react-router-dom";
 import {
   TextField,
   Button,
-  List,
-  ListItem,
   ListItemText,
   Avatar,
   IconButton,
-  Dialog,
+  Modal,
+  Box,
 } from "@mui/material";
+import Tooltip from "@mui/material/Tooltip";
+import { format } from "date-fns";
 import { PhotoCamera } from "@mui/icons-material";
-import EmojiEmotionsIcon from "@mui/icons-material/EmojiEmotions"; // Icon for emoji picker
+import EmojiEmotionsIcon from "@mui/icons-material/EmojiEmotions";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { doc, getDoc } from "firebase/firestore";
 import AuthContext from "../../context/AuthContext";
@@ -19,7 +20,8 @@ import useChat from "../../hooks/useChat";
 import useUser from "../../hooks/useUser";
 import { useUpload } from "../../hooks/useUpload";
 import db from "../../database/FirebaseConfig";
-import Picker from "emoji-picker-react"; // Emoji picker component
+import Picker from "emoji-picker-react";
+import CallIcon from "@mui/icons-material/Call";
 
 const ChatWindow = () => {
   const { chatId } = useParams();
@@ -31,9 +33,11 @@ const ChatWindow = () => {
   const { upload } = useUpload();
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
+  const [modalImageUrl, setModalImageUrl] = useState("");
+  const [hoveredMessageId, setHoveredMessageId] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
-  const [modalImageUrl, setModalImageUrl] = useState(""); // To store clicked image URL
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false); // To toggle emoji picker
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [modalPosition, setModalPosition] = useState({ top: 0, left: 0 });
   const emojiPickerRef = useRef(null);
   const navigate = useNavigate();
   const lastMessageRef = useRef(null);
@@ -62,37 +66,48 @@ const ChatWindow = () => {
     }
   }, [chatId, userId, getUserById]);
 
-  // Scroll to the bottom whenever messages change
   useEffect(() => {
     if (lastMessageRef.current) {
       lastMessageRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
 
+  const handleImageClick = (imageUrl) => {
+    setModalImageUrl(imageUrl); // Set the image URL
+    setModalVisible(true); // Open the modal
+  };
+
+  const handleMouseEnter = (timestamp, event) => {
+    setHoveredMessageTimestamp(timestamp);
+    setTimestampModalVisible(true);
+    const rect = event.target.getBoundingClientRect();
+    setModalPosition({
+      top: rect.top - 40,
+      left: rect.left + rect.width / 2,
+    });
+  };
+
+  const handleMouseLeave = () => {
+    setTimestampModalVisible(false);
+  };
+
   const handleImageUpload = async () => {
     if (selectedFiles.length === 0) return;
 
     try {
-      // Upload all selected files
       const uploadPromises = selectedFiles.map((file) => upload(file));
       const uploadedImages = await Promise.all(uploadPromises);
 
-      // Extract URLs from the uploaded images
       const imageUrls = uploadedImages
-        .map((response) => response.data?.path) // Ensure this matches your upload response
+        .map((response) => response.data?.path)
         .filter((url) => url);
-      console.log("Image URLs:", imageUrls);
 
-      // Send message with image URLs if there are any
       if (imageUrls.length > 0) {
         await sendMessage(chatId, newMessage || "", imageUrls);
-        setNewMessage(""); // Reset message text
+        setNewMessage("");
       }
 
-      // Revoke object URLs to free up memory
       imagePreviews.forEach((preview) => URL.revokeObjectURL(preview));
-
-      // Clear selected files and previews after upload
       setSelectedFiles([]);
       setImagePreviews([]);
     } catch (e) {
@@ -109,18 +124,13 @@ const ChatWindow = () => {
     }
   };
 
-  const handleFileChange = (event) => {
+  const handleMoreFilesChange = (event) => {
     const files = Array.from(event.target.files);
     if (files.length === 0) return;
 
-    setSelectedFiles(files);
-
-    // Create image previews to display
-    const previews = files.map((file) => URL.createObjectURL(file));
-    setImagePreviews(previews);
-
-    console.log("Selected files:", files);
-    console.log("Image previews:", previews);
+    setSelectedFiles((prevFiles) => [...prevFiles, ...files]);
+    const newPreviews = files.map((file) => URL.createObjectURL(file));
+    setImagePreviews((prevPreviews) => [...prevPreviews, ...newPreviews]);
   };
 
   const handleRemoveImage = (index) => {
@@ -132,64 +142,45 @@ const ChatWindow = () => {
     });
   };
 
-  // Navigate to other user's profile or self profile
   const handleProfileClick = (profileUserId, profileUsername) => {
     if (profileUserId === userId) {
-      navigate(`/profile/${currentUsername}`); // Navigate to self profile
+      navigate(`/profile/${currentUsername}`);
     } else {
-      navigate(`/profile/${profileUsername}`); // Navigate to other user's profile
+      navigate(`/profile/${profileUsername}`);
     }
   };
 
-  // Open the modal with the clicked image
-  const handleImageClick = (imageUrl) => {
-    setModalImageUrl(imageUrl);
-    setModalVisible(true);
-  };
-
-  // Close the modal
-  const handleCloseModal = () => {
-    setModalVisible(false);
-    setModalImageUrl("");
-  };
-
-  // Handle emoji selection
-  const handleEmojiClick = (event, emojiObject) => {
-    setNewMessage((prevMessage) => prevMessage + emojiObject.emoji);
-    setShowEmojiPicker(false); // Close the emoji picker after selecting an emoji
-  };
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (
-        emojiPickerRef.current &&
-        !emojiPickerRef.current.contains(event.target)
-      ) {
-        setShowEmojiPicker(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
-
   return (
     <>
-      <h2 className="text-lg font-semibold mb-2 sticky top-0 bg-gray-800 p-4 z-10">
-        Chat with{" "}
-        <span
-          onClick={() => handleProfileClick(otherUser?.id, otherUser?.username)}
-          className="cursor-pointer text-blue-500"
-        >
-          {otherUser?.username || "User"}
-        </span>
+      <h2
+        className="text-lg font-semibold mb-2 sticky top-0 bg-gray-800 p-4 z-10 flex justify-between items-center"
+        style={{ height: "64px" }}
+      >
+        <div>
+          <span className="text-gray-200">Chat with </span>{" "}
+          <span
+            onClick={() =>
+              handleProfileClick(otherUser?.id, otherUser?.username)
+            }
+            className="cursor-pointer text-blue-400"
+          >
+            {otherUser?.username || "User"}
+          </span>
+        </div>
+        <div>
+          <IconButton
+            color="primary"
+            onClick={() => handleCallClick(otherUser?.id)}
+            className="ml-4"
+          >
+            <CallIcon />
+          </IconButton>
+        </div>
       </h2>
-      <div className="pt-4 px-3 max-w-full  flex flex-col h-screen bg-gray-800">
-        {/* Chat Messages Container */}
-        <div className="overflow-y-auto flex-grow my-3  p-4 scrollbar-thin scrollbar-thumb-scrollbar-thumb w-full">
-          <div className="space-y-3 ">
+
+      <div className="pt-4 px-3 flex flex-col h-[calc(100vh-128px)] bg-gray-800">
+        <div className="overflow-y-auto flex-grow my-3 p-4 scrollbar-thin scrollbar-thumb-scrollbar-thumb scrollbar-track-gray-800 w-full">
+          <div className="space-y-3">
             {messages.map((message, index) => {
               const isOwnMessage = message.senderId === userId;
               const isLastMessage = index === messages.length - 1;
@@ -197,92 +188,130 @@ const ChatWindow = () => {
                 <div
                   key={message.id}
                   ref={isLastMessage ? lastMessageRef : null}
-                  className={`flex ${
+                  className={`group flex ${
                     isOwnMessage ? "justify-end" : "justify-start"
                   }`}
                 >
-                  <div
-                    className={`flex items-end ${
-                      isOwnMessage ? "flex-row-reverse" : "flex-row"
-                    } max-w-[85%] sm:max-w-[70%] lg:max-w-[60%]`}
+                  <Tooltip
+                    title={
+                      message.timestamp
+                        ? format(message.timestamp.toDate(), "PPpp")
+                        : ""
+                    }
+                    placement="top"
+                    arrow
                   >
-                    <Avatar
-                      src={
-                        isOwnMessage
-                          ? "/myAvatar.png"
-                          : otherUser?.profile_url || "/defaultProfile.webp"
-                      }
-                      alt="User Avatar"
-                      className={`m-1 cursor-pointer w-10 h-10 sm:w-8 sm:h-8 ${
-                        isOwnMessage ? "order-2" : ""
-                      }`}
-                      onClick={() =>
-                        handleProfileClick(
-                          isOwnMessage ? userId : otherUser?.id,
-                          isOwnMessage ? currentUsername : otherUser?.username
-                        )
-                      }
-                    />
-                    {Array.isArray(message.images) &&
-                    message.images.length > 0 ? (
-                      <div
-                        className={`flex flex-col gap-2 ${
-                          isOwnMessage ? "items-end" : "items-start"
-                        }`}
-                      >
-                        {/* Display images */}
-                        {message.images.map((imageUrl, idx) => (
-                          <img
-                            key={idx}
-                            src={imageUrl}
-                            alt={`Sent ${idx}`}
-                            className="max-w-full h-auto rounded-lg cursor-pointer"
-                            onClick={() => handleImageClick(imageUrl)}
-                          />
-                        ))}
-                        {/* Display text if it exists */}
-                        {message.text && (
-                          <div
-                            className={`${
-                              isOwnMessage
-                                ? "bg-gray-300 text-black text-right"
-                                : "bg-gray-500 text-left text-white"
-                            } p-2 rounded-lg max-w-full break-words text-sm`}
-                          >
-                            <ListItemText
-                              primary={message.text}
-                              secondary={new Date(
-                                message.timestamp?.toDate()
-                              ).toLocaleString()}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    ) : (
+                    <div
+                      className={`flex items-end ${
+                        isOwnMessage ? "flex-row" : "flex-row"
+                      } max-w-[85%] sm:max-w-[70%] lg:max-w-[60%]`}
+                    >
+                      {/* Existing message content */}
                       <div
                         className={`${
                           isOwnMessage
-                            ? "bg-gray-300 text-black text-right"
-                            : "bg-gray-500 text-left text-white"
-                        } p-2 rounded-lg max-w-full break-words text-sm`}
+                            ? "bg-gray-300 text-black text-right order-1"
+                            : "bg-gray-500 text-left text-white order-2"
+                        } p-2 rounded-lg max-w-full break-words text-sm relative`}
+                        style={{ marginRight: isOwnMessage ? "0.5rem" : "0" }}
                       >
-                        <ListItemText
-                          primary={message.text}
-                          secondary={new Date(
-                            message.timestamp?.toDate()
-                          ).toLocaleString()}
-                        />
+                        {Array.isArray(message.images) &&
+                          message.images.length > 0 && (
+                            <div
+                              className={`flex flex-col gap-2 ${
+                                isOwnMessage ? "items-end" : "items-start"
+                              }`}
+                            >
+                              {message.images.map((imageUrl, idx) => (
+                                <img
+                                  key={idx}
+                                  src={imageUrl}
+                                  alt={`Sent ${idx}`}
+                                  className="rounded-lg cursor-pointer"
+                                  style={{
+                                    maxWidth: "200px",
+                                    maxHeight: "200px",
+                                    width: "auto",
+                                    height: "auto",
+                                  }}
+                                  onClick={() => handleImageClick(imageUrl)}
+                                />
+                              ))}
+                            </div>
+                          )}
+                        {message.text && (
+                          <ListItemText primary={message.text} />
+                        )}
                       </div>
-                    )}
-                  </div>
+                      <Avatar
+                        src={
+                          isOwnMessage
+                            ? "/myAvatar.png"
+                            : otherUser?.profile_url || "/defaultProfile.webp"
+                        }
+                        alt="User Avatar"
+                        className={`m-1 cursor-pointer w-10 h-10 sm:w-8 sm:h-8 ${
+                          isOwnMessage ? "order-2" : ""
+                        }`}
+                        onClick={() =>
+                          handleProfileClick(
+                            isOwnMessage ? userId : otherUser?.id,
+                            isOwnMessage ? currentUsername : otherUser?.username
+                          )
+                        }
+                        style={{
+                          marginLeft: isOwnMessage ? "0.5rem" : "0",
+                          marginRight: !isOwnMessage ? "0.5rem" : "0",
+                        }}
+                      />
+                    </div>
+                  </Tooltip>
                 </div>
               );
             })}
           </div>
         </div>
 
+        {/* modal for full image */}
+        <Modal
+          open={modalVisible}
+          onClose={() => setModalVisible(false)}
+          aria-labelledby="image-modal"
+          aria-describedby="modal-to-display-full-image"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            outline: "none", // Remove any outline from the modal
+          }}
+        >
+          <Box
+            sx={{
+              backgroundColor: "transparent",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              outline: "none", // Remove any outline from the Box
+              border: "none", // Ensure no border is present
+            }}
+          >
+            <img
+              src={modalImageUrl}
+              alt="Full Size"
+              style={{
+                maxWidth: "90vw",
+                maxHeight: "90vh",
+                objectFit: "contain",
+              }}
+            />
+          </Box>
+        </Modal>
+
         {/* Sticky Input Section */}
-        <div className="sticky bottom-0 bg-gray-800 p-4 border-t border-gray-300 w-full flex flex-col items-center space-y-2">
+        <div
+          className="sticky bottom-0 bg-gray-800 p-4 border-t border-gray-300 w-full flex flex-col items-center space-y-2"
+          style={{ height: "64px" }} // Set a fixed height for the input section
+        >
           {imagePreviews.length > 0 && (
             <div className="w-full flex gap-2 overflow-x-auto p-2 bg-gray-600 rounded-md">
               {imagePreviews.map((preview, index) => (
@@ -300,11 +329,26 @@ const ChatWindow = () => {
                   </button>
                 </div>
               ))}
+              {/* Add the button to upload more images */}
+              <IconButton
+                color="primary"
+                component="label"
+                className="flex-shrink-0"
+              >
+                <PhotoCamera />
+                <input
+                  accept="image/*"
+                  type="file"
+                  multiple
+                  onChange={handleMoreFilesChange} // New handler function for additional files
+                  style={{ display: "none" }}
+                />
+              </IconButton>
             </div>
           )}
 
           {/* Input and Controls */}
-          <div className="w-full flex items-center space-x-2">
+          <div className="w-full flex items-center space-x-2 ">
             <IconButton onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
               <EmojiEmotionsIcon />
             </IconButton>
@@ -324,7 +368,7 @@ const ChatWindow = () => {
                 accept="image/*"
                 type="file"
                 multiple
-                onChange={handleFileChange}
+                onChange={handleMoreFilesChange}
                 style={{ display: "none" }}
               />
             </IconButton>
@@ -354,29 +398,6 @@ const ChatWindow = () => {
             </Button>
           </div>
         </div>
-
-        {/* Modal for displaying full-size image */}
-        <Dialog open={modalVisible} onClose={handleCloseModal} maxWidth="lg">
-          <div className="p-4">
-            <img
-              src={modalImageUrl}
-              alt="Full Size"
-              style={{
-                maxWidth: "100%",
-                maxHeight: "80vh",
-                objectFit: "contain",
-              }}
-            />
-            <Button
-              onClick={handleCloseModal}
-              style={{ marginTop: "10px" }}
-              variant="contained"
-              color="secondary"
-            >
-              Close
-            </Button>
-          </div>
-        </Dialog>
       </div>
     </>
   );
