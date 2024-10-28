@@ -178,32 +178,31 @@ const ChatWindow = () => {
   return (
     <div className="flex flex-col h-screen bg-gray-900">
       {/* Header */}
-      <div className="sticky top-0 z-10">
-        <div className="flex items-center justify-between p-4 bg-gray-900">
-          <div className="flex items-center">
-            <Avatar
-              src={otherUser?.profile_url || "/defaultProfile.webp"}
-              alt="User Avatar"
-              className="mr-3 cursor-pointer"
-              onClick={() =>
-                handleProfileClick(otherUser?.id, otherUser?.username)
-              }
-            />
-            <div>
-              <h2 className="text-lg font-semibold text-white">
-                {otherUser?.username || "User"}
-              </h2>
-            </div>
+
+      <div className="flex items-center justify-between p-4 bg-gray-900 sticky ">
+        <div className="flex items-center">
+          <Avatar
+            src={otherUser?.profile_url || "/defaultProfile.webp"}
+            alt="User Avatar"
+            className="mr-3 cursor-pointer"
+            onClick={() =>
+              handleProfileClick(otherUser?.id, otherUser?.username)
+            }
+          />
+          <div>
+            <h2 className="text-lg font-semibold text-white">
+              {otherUser?.username || "User"}
+            </h2>
           </div>
-          <a href="tel:123456789">
+        </div>
+        <a href="tel:123456789">
           <IconButton
             color="primary"
             onClick={() => handleCallClick(otherUser?.id)}
           >
             <CallIcon className="text-white" />
           </IconButton>
-          </a>
-        </div>
+        </a>
       </div>
 
       {/* Messages */}
