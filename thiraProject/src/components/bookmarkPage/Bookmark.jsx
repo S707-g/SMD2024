@@ -48,7 +48,6 @@ const Bookmarks = () => {
   const [currentPostIndex, setCurrentPostIndex] = useState(null);
   const [commentsVisibility, setCommentsVisibility] = useState({});
   const [loading, setLoading] = useState(true);
-  const [isLoaded, setIsLoaded] = useState(false);
   const navigate = useNavigate();
 
   const { getUserByUsername, getUserById } = useUser();
@@ -90,10 +89,16 @@ const Bookmarks = () => {
     const isBookmarked = await togglePostBookmark(post.id, userId);
 
     if (isBookmarked !== null) {
-      post.bookmarked = isBookmarked;
-      setPosts(updatedPosts);
+      const newPosts = updatedPosts.filter((_, i) => i !== index);
+      setPosts(newPosts);
     } else {
       console.error("Failed to toggle bookmark for post:", post.id);
+    }
+
+    if (!isBookmarked) {
+      // If post is unbookmarked, remove it from local state
+      updatedPosts.splice(index, 1);
+      setPosts(updatedPosts);
     }
   };
 
@@ -342,6 +347,9 @@ const Bookmarks = () => {
 
   useEffect(() => {
     const loadBookmarkedPosts = async () => {
+      if (!loading) {
+        setLoading(true);
+      }
       try {
         // Fetch bookmarked posts for the user
         const data = await fetchBookmarkedPosts(userId);
@@ -397,9 +405,8 @@ const Bookmarks = () => {
 
           const postsData = (await Promise.all(postPromises)).filter(Boolean);
           setPosts(postsData);
-          setIsLoaded(true);
         } else {
-          console.error("No bookmarked posts found");
+          setPosts([]);
         }
       } catch (error) {
         console.error("Error fetching bookmarked posts:", error);
@@ -408,8 +415,10 @@ const Bookmarks = () => {
       }
     };
 
-    loadBookmarkedPosts();
-  }, [userId, fetchBookmarkedPosts, getHiddenPosts]);
+    if (loading) {
+      loadBookmarkedPosts();
+    }
+  },[userId, loading]);
 
   const addNewPost = async (newPostContent, newImageContents) => {
     let imageUrls = [];
