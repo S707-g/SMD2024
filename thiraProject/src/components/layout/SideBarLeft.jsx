@@ -7,15 +7,25 @@ import SendIcon from "@mui/icons-material/Send";
 import ExitToAppIcon from "@mui/icons-material/ExitToApp";
 import AuthContext from "../../context/AuthContext"; // Adjust the path based on your file structure
 import { Navigate, useNavigate } from "react-router-dom";
+import Login from "../layout/login/Login";
 
 const SideBarLeft = ({ onLogout }) => {
-  const { isAuthenticated, logout } = useContext(AuthContext);
+  const { isAuthenticated, login } = useContext(AuthContext);
+  const [modalLogin, setModalLogin] = useState(false);
   const [modalLogout, setModalLogout] = useState(false);
   const homeNavigate = useNavigate();
 
   const handleHomeClick = () => {
     homeNavigate(`/`);
     window.location.reload();
+  };
+
+  const handleBookmarkClick = () => {
+    if (!isAuthenticated) {
+      setModalLogin(true);
+      return;
+    }
+    homeNavigate(`/bookmarks`);
   };
 
   const handleModalLogout = () => {
@@ -52,7 +62,11 @@ const SideBarLeft = ({ onLogout }) => {
       <div>
         <NavButton Icon={HomeIcon} label="Home" onClick={handleHomeClick} />
         <NavButton Icon={PeopleIcon} label="Friends" />
-        <NavButton Icon={BookmarkIcon} label="Bookmarks" />
+        <NavButton
+          Icon={BookmarkIcon}
+          label="Bookmarks"
+          onClick={handleBookmarkClick}
+        />
         <NavButton Icon={SendIcon} label="Post" />
       </div>
 
@@ -64,6 +78,31 @@ const SideBarLeft = ({ onLogout }) => {
             label="Logout"
             onClick={handleModalLogout}
           />
+        </div>
+      )}
+
+      {modalLogin && (
+        <div
+          className="fixed inset-0 bg-gray-900 bg-opacity-70 flex justify-center items-center z-50"
+          onClick={() => setModalLogin(false)} // Corrected this line
+        >
+          <div
+            className="bg-gray-800 p-6 rounded-lg shadow-lg relative text-white"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="absolute top-2 right-2 text-gray-400 hover:text-white"
+              onClick={() => setModalLogin(false)} // Corrected this line
+            >
+              ✕
+            </button>
+            <Login
+              onSuccess={(user) => {
+                login(user.username);
+                setModalLogin(false);
+              }}
+            />
+          </div>
         </div>
       )}
 

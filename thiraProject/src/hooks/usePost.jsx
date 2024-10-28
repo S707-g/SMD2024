@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import {
+  where,
   collection,
   getDocs,
   addDoc,
@@ -34,6 +35,22 @@ const usePosts = () => {
       return postsData;
     } catch (error) {
       console.error("Error fetching posts:", error);
+      return [];
+    }
+  };
+
+  const fetchBookmarkedPosts = async (userId) => {
+    try {
+      const postsRef = collection(db, "posts");
+      const bookmarkedPostsQuery = query(postsRef, where("bookmarkedBy", "array-contains", userId)); // Adjust "bookmarkedBy" if necessary
+      const querySnapshot = await getDocs(bookmarkedPostsQuery);
+      const bookmarkedPosts = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      return bookmarkedPosts;
+    } catch (error) {
+      console.error("Error fetching bookmarked posts:", error);
       return [];
     }
   };
@@ -99,6 +116,7 @@ const usePosts = () => {
     deletePost,
     updatePost,
     fetchPosts,
+    fetchBookmarkedPosts,
   };
 };
 

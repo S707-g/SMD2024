@@ -19,10 +19,8 @@ import BookmarkIcon from "@mui/icons-material/Bookmark";
 import { formatDistanceToNow } from "date-fns";
 
 // Custom Components
-import CreatePost from "./CreatePost";
-import ModalPost from "./ModalPost";
 import Login from "../layout/login/Login";
-import EditPost from "./Editpost";
+import EditPost from "../feedpage/Editpost.jsx";
 
 // Context and Hooks
 import AuthContext from "../../context/AuthContext";
@@ -32,7 +30,7 @@ import useLikes from "../../hooks/useLikes";
 import useComments from "../../hooks/useComments";
 import useHiddenPosts from "../../hooks/useHiddenPosts";
 
-const Feed = () => {
+const Bookmark = () => {
   const { isAuthenticated, login, username, userId } = useContext(AuthContext);
   const [showCreatePost, setShowCreatePost] = useState(false);
   const [showModalPost, setShowModalPost] = useState(false);
@@ -48,7 +46,7 @@ const Feed = () => {
   const [isLoaded, setIsLoaded] = useState(false);
 
   const { getUserByUsername, getUserById } = useUser();
-  const { addPost, fetchPosts, deletePost, updatePost } = usePosts();
+  const { fetchBookmarkedPosts, deletePost, updatePost } = usePosts(); // Use a function that specifically fetches bookmarked posts
   const { addPostToHiddenPosts, getHiddenPosts } = useHiddenPosts();
   const {
     isPostLikedByUser,
@@ -62,17 +60,7 @@ const Feed = () => {
     fetchCommentsForPost,
     deleteCommentsForPost,
     deleteComment,
-  } = useComments();
-
-  const handleCreatePost = () => {
-    if (isAuthenticated) {
-      setShowCreatePost(true);
-    } else {
-      setModalLogin(true);
-    }
-  };
-
-  
+  } = useComments(); 
   
 // Toggle bookmark status for a post
 const handleBookmarkToggle = async (index) => {
@@ -337,8 +325,9 @@ const handleBookmarkToggle = async (index) => {
         if (isAuthenticated && userId) {
           hiddenPosts = await getHiddenPosts(userId);
         }
+        console.log(userId);
 
-        const data = await fetchPosts();
+        const data = await fetchBookmarkedPosts(userId);
         if (data && data?.length > 0) {
           const postPromises = data
             .filter((post) => !hiddenPosts.includes(post.id)) // Exclude hidden posts
@@ -406,7 +395,7 @@ const handleBookmarkToggle = async (index) => {
     };
 
     loadPosts();
-  }, [isLoaded, isAuthenticated, userId, fetchPosts, getUserById]);
+  }, [isLoaded, isAuthenticated, userId, fetchBookmarkedPosts, getUserById]);
 
   const addNewPost = async (newPostContent, newImageContents) => {
     let imageUrls = [];
@@ -470,12 +459,6 @@ const handleBookmarkToggle = async (index) => {
           <div className="mx-4">{username || ""}</div>
         </div>
 
-        <Button
-          onClick={handleCreatePost}
-          className="!rounded-2xl flex-1 !bg-gray-700 !text-white !text-start hover:!bg-gray-600"
-        >
-          Post Here
-        </Button>
       </div>
 
       <div className="flex flex-col max-w-full gap-5 ">
@@ -777,29 +760,6 @@ const handleBookmarkToggle = async (index) => {
         )}
       </div>
 
-      {showCreatePost && (
-        <div
-          className="fixed inset-0 bg-gray-900 bg-opacity-70 flex justify-center items-center z-50"
-          onClick={closeCreatePost}
-        >
-          <div
-            className="bg-gray-800 p-6 rounded-lg shadow-lg relative text-white"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              className="absolute top-2 right-2 text-gray-400 hover:text-white"
-              onClick={closeCreatePost}
-            >
-              ✕
-            </button>
-            <CreatePost
-              textPostContent={(text, images) => addNewPost(text, images)}
-              closePost={closeCreatePost}
-            />
-          </div>
-        </div>
-      )}
-
       {modalLogin && (
         <div
           className="fixed inset-0 bg-gray-900 bg-opacity-70 flex justify-center items-center z-50"
@@ -902,4 +862,5 @@ const handleBookmarkToggle = async (index) => {
   );
 };
 
-export default Feed;
+export default Bookmark;
+

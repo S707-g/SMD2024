@@ -10,6 +10,7 @@ import Layout from "./components/layout/Layout.jsx";
 import Profile from "./components/profilePage/Profile.jsx";
 import MessageList from "./components/messagePage/messageList.jsx";
 import { AuthProvider } from "./context/AuthContext.jsx";
+import Bookmark from "./components/bookmarkPage/Bookmark";
 
 // Wrapper component to provide `navigate` to `AuthProvider`
 function AuthProviderWithNavigate({ children }) {
@@ -24,6 +25,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Layout />}>
             <Route path="/" element={<Feed />} />
+            <Route path="bookmarks" element={<Bookmark />} /> 
             <Route path="/message" element={<MessageList />} />
             <Route path="/profile/:username" element={<Profile />} />
           </Route>
