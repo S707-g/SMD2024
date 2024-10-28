@@ -9,14 +9,29 @@ import Logo from "/src/assets/Thira.svg";
 import Login from "./login/Login";
 import AuthContext from "../../context/AuthContext";
 import useUser from "../../hooks/useUser"; // Import the hook
+import { AccountCircle } from "@mui/icons-material";
 
 const NavB = () => {
   const { isAuthenticated, login, username } = useContext(AuthContext);
-  const { getUsernamesByPartialMatch } = useUser(); // Use the hook
+  const { getUsernamesByPartialMatch, getUserByUsername } = useUser(); // Use the hook
   const [modalLogin, setModalLogin] = useState(false);
   const [searchInput, setSearchInput] = useState("");
   const [matchingUsers, setMatchingUsers] = useState([]);
   const navigate = useNavigate();
+  const [userimage, setUserImage] = useState();
+  
+  useEffect(() => {
+    const fetchUserImage = async () => {
+      if (username) {
+        const userDoc = await getUserByUsername(username);
+        if (userDoc && userDoc.profile_url) {
+          setUserImage(userDoc.profile_url);
+          console.log(userDoc.profile_url);
+        }
+      }
+    };
+    fetchUserImage();
+  }, [username, getUserByUsername]);
 
   const handleAccountClick = () => {
     if (isAuthenticated && username) {
@@ -134,7 +149,15 @@ const NavB = () => {
           aria-label="Account"
           onClick={handleAccountClick}
         >
-          <AccountCircleIcon />
+          {userimage ? (
+            <img
+              src={userimage}
+              alt="Profile"
+              className="h-10 w-10 rounded-full object-cover"
+            />
+          ) : (
+            <AccountCircleIcon />
+          )}
         </Button>
       </div>
 

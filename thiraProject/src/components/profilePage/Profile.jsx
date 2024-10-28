@@ -255,8 +255,8 @@ const Profile = () => {
     "https://github.com/S707-g/SMD2024/blob/gotinwza/thiraProject/src/components/img/defaultProfile.webp";
 
   return bio ? (
-    <div className="text-white w-full h-full pt-3 pr-3 overflow-y-auto hide-scrollbar">  
-      <div className="bg-[#153549] p-5 rounded-lg flex-col">
+    <div className="text-white w-full h-full pt-3 pr-3 overflow-y-auto">  
+      <div className="bg-[#153549] p-5 mb-[30px] border-2 border-white rounded-xl flex-col">
         <Grid container spacing={3} alignItems="center" className="my-5">
           <Grid item xs={12} sm={4} md={3}>
             <Avatar
@@ -276,11 +276,11 @@ const Profile = () => {
           </Grid>
 
           <Grid item xs={12} sm={8} md={9} className="text-center sm:text-left">
-            <Typography variant="h5" className="break-words">
+            <Typography variant="h5" className="font-semibold text-size-5 ">
               {username}
             </Typography>
             {!editMode ? (
-              <Typography variant="body2" color="white" sx={{ mt: 1 }}>
+              <Typography variant="body2" color="#cfcfcf" sx={{ mt: 1 }}>
                 {userBio || "No bio available."}
               </Typography>
             ) : (
@@ -350,14 +350,20 @@ const Profile = () => {
           </Grid>
         </Grid>
       </div>
+
+      <div className="mt-3">
+        <Typography variant="h5" className="font-semibold text-size-5 text-white">
+        {username} 's Post
+        </Typography>
+      </div>
+
       <div className="rounded-lg mt-3 h-auto overflow-auto">
-        
           {/* this user posts */}
-          <div className="flex flex-col gap-[20px]">
+          <div className="flex flex-col gap-[20px] mb-5">
             {
               posts && posts.map((post) => {
                 return (
-                  <div key={post.id} className="text-white border-2 p-4 bg-[#203B50] border-black flex flex-col rounded-xl">
+                  <div key={post.id} className="text-white border-2 p-4 bg-[#203B50] border-white flex flex-col rounded-xl">
                     <div className="flex flex-row">
                       <img src={post.user.profile_url} alt="Profile Picture" className="w-10 h-10 rounded-full mr-5 mb-5" />
                       <span className="font-bold text-[18px]">{post.user.username}</span>
