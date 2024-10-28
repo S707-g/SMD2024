@@ -31,6 +31,7 @@ import usePosts from "../../hooks/usePost";
 import useLikes from "../../hooks/useLikes";
 import useComments from "../../hooks/useComments";
 import useHiddenPosts from "../../hooks/useHiddenPosts";
+import useBookmark from "../../hooks/useBookmark";
 
 const Feed = () => {
   const { isAuthenticated, login, username, userId } = useContext(AuthContext);
@@ -51,6 +52,7 @@ const Feed = () => {
   const { getUserByUsername, getUserById } = useUser();
   const { addPost, fetchPosts, deletePost, updatePost } = usePosts();
   const { addPostToHiddenPosts, getHiddenPosts } = useHiddenPosts();
+  const { togglePostBookmark } = useBookmark()
   const {
     isPostLikedByUser,
     likePost,
@@ -75,36 +77,21 @@ const Feed = () => {
 
   // Toggle bookmark status for a post
   const handleBookmarkToggle = async (index) => {
+    if (!isAuthenticated) {
+      setModalLogin(true);
+      return;
+    }
+  
     const updatedPosts = [...posts];
     const post = updatedPosts[index];
-    const bookmarksRef = collection(db, "bookmarks");
-
-    try {
-      // Query to check if the bookmark already exists
-      const bookmarkQuery = query(
-        bookmarksRef,
-        where("postId", "==", post.id),
-        where("bookmarkedBy", "==", userId)
-      );
-      const querySnapshot = await getDocs(bookmarkQuery);
-
-      if (!querySnapshot.empty) {
-        // Bookmark exists, so remove it
-        const bookmarkDocId = querySnapshot.docs[0].id; // Get the ID of the bookmark document
-        await deleteDoc(doc(db, "bookmarks", bookmarkDocId));
-        post.bookmarked = false; // Update local state
-      } else {
-        // Bookmark doesn't exist, so add it
-        await addDoc(bookmarksRef, {
-          postId: post.id,
-          bookmarkedBy: userId,
-        });
-        post.bookmarked = true; // Update local state
-      }
-
+  
+    const isBookmarked = await togglePostBookmark(post.id, userId);
+  
+    if (isBookmarked !== null) {
+      post.bookmarked = isBookmarked;
       setPosts(updatedPosts);
-    } catch (error) {
-      console.error("Error toggling bookmark:", error);
+    } else {
+      console.error("Failed to toggle bookmark for post:", post.id);
     }
   };
 

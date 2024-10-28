@@ -20,9 +20,16 @@ const usePosts = () => {
 
   // Fetch all posts
   useEffect(() => {
-    fetchPosts();
-  }, []);
+    const loadPosts = async () => {
+      setLoading(true);
+      const data = await fetchPosts();
+      setPosts(data);
+      setLoading(false);
+    };
 
+    loadPosts();
+  }, []);
+  
   const fetchPosts = async () => {
     try {
       const postsRef = collection(db, "posts");
@@ -40,22 +47,18 @@ const usePosts = () => {
   };
 
   const fetchBookmarkedPosts = async (userId) => {
-    if (!userId) {
-      console.error("User ID is undefined. Cannot fetch bookmarked posts.");
-      return [];
-    }
-  
     try {
-      const postsRef = collection(db, "posts");
-      const bookmarkedPostsQuery = query(postsRef, where("bookmarkedBy", "array-contains", userId));
-      const querySnapshot = await getDocs(bookmarkedPostsQuery);
-      const bookmarkedPosts = querySnapshot.docs.map((doc) => ({
+      const bookmarksRef = collection(db, "bookmarks");
+      const q = query(bookmarksRef, where("bookmarkedBy", "==", userId));
+      const querySnapshot = await getDocs(q);
+      console.log("Fetched bookmarked posts:", querySnapshot.docs.map(doc => doc.data()));
+      return querySnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
-      return bookmarkedPosts;
     } catch (error) {
       console.error("Error fetching bookmarked posts:", error);
+      setError(error);
       return [];
     }
   };
