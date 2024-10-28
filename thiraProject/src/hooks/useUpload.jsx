@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+
 export const useUpload = () => {
   const upload = useCallback(async (file) => {
     try {
@@ -10,9 +11,14 @@ export const useUpload = () => {
         body: formData,
       });
       const data = await response.json();
+      console.log("Upload response data:", data);
       return { data, status: response.status };
-    } catch (e) {}
+    } catch (e) {
+      console.error("Upload failed:", e);
+      throw e;
+    }
   }, []);
+
   return {
     upload,
   };

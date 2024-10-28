@@ -1,25 +1,49 @@
-import React, { useEffect, useState } from "react";
-import { Avatar, Button, Typography, Grid, TextField, IconButton } from "@mui/material";
-import SettingsIcon from "@mui/icons-material/Settings";
+import React, { useEffect, useState, useContext } from "react";
+import {
+  Avatar,
+  Button,
+  Typography,
+  Grid,
+  TextField,
+  IconButton,
+} from "@mui/material";
+import { useParams, useNavigate } from "react-router-dom";
 import SaveIcon from "@mui/icons-material/Save";
 import CancelIcon from "@mui/icons-material/Cancel";
-import { useParams } from "react-router-dom";
+import MessageIcon from "@mui/icons-material/Message";
 import useUser from "../../hooks/useUser";
 import db from "../../database/FirebaseConfig";
-import { updateDoc, doc } from "firebase/firestore";
+import {
+  updateDoc,
+  doc,
+  collection,
+  query,
+  where,
+  getDocs,
+  addDoc,
+  Timestamp,
+} from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import AuthContext from "../../context/AuthContext"; // Assuming AuthContext for user state
 
 const Profile = () => {
   const { username } = useParams();
   const { getUserByUsername } = useUser();
+  const {
+    user,
+    isAuthenticated,
+    username: currentUserUsername,
+    userId,
+  } = useContext(AuthContext); // Get current user's username
   const [bio, setBio] = useState();
   const [userimage, setUserImage] = useState();
   const [userBio, setUserBio] = useState();
   const [editMode, setEditMode] = useState(false);
   const [newBio, setNewBio] = useState("");
-  const [newImage, setNewImage] = useState(null); // New state to hold the uploaded file
-  const [previewImage, setPreviewImage] = useState(""); // Preview before upload
+  const [newImage, setNewImage] = useState(null);
+  const [previewImage, setPreviewImage] = useState("");
 
+  const navigate = useNavigate();
   const storage = getStorage(); // Initialize Firebase Storage
 
   useEffect(() => {
@@ -74,19 +98,50 @@ const Profile = () => {
     }
   };
 
-  if (bio === null) {
-    return (
-      <div className="w-full h-full bg-gray-400 p-3">
-        <div className="bg-white p-5 rounded-lg flex-col">
-          <Typography variant="h5" color="error">
-            T_T Sorry, we couldn't find this user.
-          </Typography>
-        </div>
-      </div>
-    );
-  }
+  const handleSendMessage = async () => {
+    if (!isAuthenticated) {
+      alert("You need to be logged in to send a message.");
+      return;
+    }
 
-  const profileImage = previewImage || userimage || 
+    try {
+      // Check if chat between the logged-in user and profile user exists
+      const chatRef = collection(db, "chats");
+      const q = query(chatRef, where("users", "array-contains", userId));
+      const querySnapshot = await getDocs(q);
+
+      // Find if chat exists with the selected user
+      let existingChat = null;
+      querySnapshot.forEach((doc) => {
+        const chatData = doc.data();
+        if (chatData.users.includes(bio.id)) {
+          existingChat = { id: doc.id, ...chatData };
+        }
+      });
+
+      // If chat exists, navigate to the chat page
+      if (existingChat) {
+        navigate(`/chat/${existingChat.id}`);
+      } else {
+        // If chat doesn't exist, create a new one
+        const newChatRef = await addDoc(collection(db, "chats"), {
+          users: [userId, bio.id],
+          createdAt: Timestamp.now(),
+          lastMessage: "",
+        });
+
+        // Navigate to the newly created chat
+        navigate(`/chat/${newChatRef.id}`);
+      }
+    } catch (error) {
+      console.error("Error sending message:", error);
+      alert("Failed to send a message. Please try again.");
+    }
+  };
+
+  const profileImage =
+    previewImage ||
+    userimage ||
     "https://github.com/S707-g/SMD2024/blob/gotinwza/thiraProject/src/components/img/defaultProfile.webp";
 
   return bio ? (
@@ -135,17 +190,34 @@ const Profile = () => {
         <Grid container spacing={2} className="mt-8">
           <Grid item>
             {!editMode ? (
-              <Button
-                variant="contained"
-                color="inherit"
-                onClick={() => {
-                  setEditMode(true);
-                  setNewBio(userBio);
-                }}
-                className="!bg-gray-500 !text-white !rounded-full !py-2 !px-4 !hover:bg-white !hover:text-gray-700"
-              >
-                Edit Profile
-              </Button>
+              <>
+                {/* Only show the "Edit Profile" button if it's the current user's profile */}
+                {currentUserUsername === username && (
+                  <Button
+                    variant="contained"
+                    color="inherit"
+                    onClick={() => {
+                      setEditMode(true);
+                      setNewBio(userBio);
+                    }}
+                    className="!bg-gray-500 !text-white !rounded-full !py-2 !px-4 !hover:bg-white !hover:text-gray-700"
+                  >
+                    Edit Profile
+                  </Button>
+                )}
+                {/* Only show the "Send a Message" button if it's not the current user's profile */}
+                {currentUserUsername !== username && (
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={handleSendMessage}
+                    startIcon={<MessageIcon />}
+                    className="!bg-blue-500 !text-white !rounded-full !py-2 !px-4 !hover:bg-blue-600 ml-3"
+                  >
+                    Send a Message
+                  </Button>
+                )}
+              </>
             ) : (
               <>
                 <IconButton

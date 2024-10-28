@@ -35,6 +35,12 @@ const NavB = () => {
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
+
+    if (!isAuthenticated) {
+      setModalLogin(true); // Open login modal if not authenticated
+      return;
+    }
+
     if (searchInput.trim()) {
       navigate(`/profile/${searchInput.trim()}`);
       setSearchInput(""); // Clear the search input after navigating
@@ -44,6 +50,11 @@ const NavB = () => {
 
   useEffect(() => {
     const fetchMatchingUsers = async () => {
+      if (!isAuthenticated) {
+        setMatchingUsers([]); // Clear if not authenticated
+        return;
+      }
+
       if (searchInput.trim().length > 0) {
         const results = await getUsernamesByPartialMatch(searchInput);
         setMatchingUsers(results);
@@ -53,7 +64,7 @@ const NavB = () => {
     };
 
     fetchMatchingUsers();
-  }, [searchInput, getUsernamesByPartialMatch]);
+  }, [searchInput, getUsernamesByPartialMatch, isAuthenticated]);
 
   return (
     <div className="p-3 flex justify-between items-center bg-gray-800 border-b-2 border-gray-500">
@@ -64,8 +75,15 @@ const NavB = () => {
         <img src={Logo} alt="Thira Logo" className="h-12 w-auto" />
       </div>
 
-      <div className="relative flex-grow mx-4 flex justify-center"> {/* Centered Search Bar */}
-        <form onSubmit={handleSearchSubmit} className="relative w-full max-w-xs"> {/* Limiting width */}
+      <div className="relative flex-grow mx-4 flex justify-center">
+        {" "}
+        {/* Centered Search Bar */}
+        <form
+          onSubmit={handleSearchSubmit}
+          className="relative w-full max-w-xs"
+        >
+          {" "}
+          {/* Limiting width */}
           <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
             <SearchIcon className="text-white" aria-label="Search Icon" />
           </div>
@@ -73,17 +91,21 @@ const NavB = () => {
             type="search"
             id="search"
             placeholder="Search profiles"
-            className="bg-[#2A3236] pl-10 pr-4 py-2 rounded-full text-white focus:outline-none w-full" 
+            className="bg-[#2A3236] pl-10 pr-4 py-2 rounded-full text-white focus:outline-none w-full"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
           />
           {matchingUsers.length > 0 && (
-            <ul className="absolute bg-gray-700 rounded mt-1 w-full z-10 max-h-48 overflow-y-auto"> 
+            <ul className="absolute bg-gray-700 rounded mt-1 w-full z-10 max-h-48 overflow-y-auto">
               {matchingUsers.map((user) => (
                 <li
                   key={user.id}
                   className="py-2 px-4 text-white hover:bg-gray-600 cursor-pointer"
                   onClick={() => {
+                    if (!isAuthenticated) {
+                      setModalLogin(true); // Open login modal if not authenticated
+                      return;
+                    }
                     navigate(`/profile/${user.username}`);
                     setSearchInput(""); // Clear the input
                     setMatchingUsers([]); // Clear the matches
