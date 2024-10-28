@@ -294,7 +294,11 @@ const Feed = () => {
         const userDoc = await getUserByUsername(username);
         if (userDoc && userDoc.profile_url) {
           setUserProfilePic(userDoc.profile_url);
-        } 
+        } else {
+          setUserProfilePic(
+            "https://github.com/S707-g/SMD2024/blob/gotinwza/thiraProject/src/components/img/defaultProfile.webp"
+          ); // Use default if no profile picture
+        }
       }
     };
 

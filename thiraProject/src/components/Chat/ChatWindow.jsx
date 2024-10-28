@@ -169,17 +169,10 @@ const ChatWindow = () => {
     }
   };
 
-  // Handle call functionality (to be implemented)
-  const handleCallClick = (otherUserId) => {
-    // Implement your call functionality here
-    alert(`Initiate call with user ID: ${otherUserId}`);
-  };
-
   return (
-    <div className="flex flex-col h-screen bg-gray-900">
+    <div className="flex flex-col h-full bg-gray-900">
       {/* Header */}
-
-      <div className="flex items-center justify-between p-4 bg-gray-900 sticky ">
+      <div className="flex items-center justify-between p-4 bg-gray-900 sticky top-0 z-10 w-full">
         <div className="flex items-center">
           <Avatar
             src={otherUser?.profile_url || "/defaultProfile.webp"}
@@ -195,14 +188,6 @@ const ChatWindow = () => {
             </h2>
           </div>
         </div>
-        <a href="tel:123456789">
-          <IconButton
-            color="primary"
-            onClick={() => handleCallClick(otherUser?.id)}
-          >
-            <CallIcon className="text-white" />
-          </IconButton>
-        </a>
       </div>
 
       {/* Messages */}
