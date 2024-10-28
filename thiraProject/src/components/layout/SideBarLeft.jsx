@@ -40,7 +40,7 @@ const SideBarLeft = ({ onLogout }) => {
       setModalLogin(true);
       return;
     }
-    homeNavigate(`/bookmarks`);
+    navigate(`/bookmarks`);
   };
 
   const handleModalLogout = () => {

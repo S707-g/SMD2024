@@ -40,9 +40,14 @@ const usePosts = () => {
   };
 
   const fetchBookmarkedPosts = async (userId) => {
+    if (!userId) {
+      console.error("User ID is undefined. Cannot fetch bookmarked posts.");
+      return [];
+    }
+  
     try {
       const postsRef = collection(db, "posts");
-      const bookmarkedPostsQuery = query(postsRef, where("bookmarkedBy", "array-contains", userId)); // Adjust "bookmarkedBy" if necessary
+      const bookmarkedPostsQuery = query(postsRef, where("bookmarkedBy", "array-contains", userId));
       const querySnapshot = await getDocs(bookmarkedPostsQuery);
       const bookmarkedPosts = querySnapshot.docs.map((doc) => ({
         id: doc.id,
@@ -54,6 +59,7 @@ const usePosts = () => {
       return [];
     }
   };
+  
 
   // Add a new post
   const addPost = async (newPost) => {

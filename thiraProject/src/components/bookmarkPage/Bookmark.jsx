@@ -2,7 +2,6 @@
 import React, { useState, useContext, useEffect } from "react";
 import { Timestamp } from "firebase/firestore";
 
-
 // Material-UI Components and Icons
 import { Button, TextField } from "@mui/material";
 import MoonLoader from "react-spinners/MoonLoader";
@@ -21,6 +20,7 @@ import { formatDistanceToNow } from "date-fns";
 // Custom Components
 import Login from "../layout/login/Login";
 import EditPost from "../feedpage/Editpost.jsx";
+import BookmarkToggle from "./BookmarkToggle";
 
 // Context and Hooks
 import AuthContext from "../../context/AuthContext";
@@ -60,18 +60,7 @@ const Bookmark = () => {
     fetchCommentsForPost,
     deleteCommentsForPost,
     deleteComment,
-  } = useComments(); 
-  
-// Toggle bookmark status for a post
-const handleBookmarkToggle = async (index) => {
-  const updatedPosts = [...posts];
-  const post = updatedPosts[index];
-  post.bookmarked = !post.bookmarked;
-
-  // Update bookmark status in Firestore
-  await updatePost(post.id, { bookmarked: post.bookmarked });
-  setPosts(updatedPosts);
-};
+  } = useComments();
 
   const handleImageClick = (url) => {
     setSelectedImage(url); // Set the selected image URL
@@ -344,13 +333,13 @@ const handleBookmarkToggle = async (index) => {
                 postData.profilePic = "/profile.webp";
               }
 
-              
-
               // Fetch likes count and if the current user has liked the post
               const likesCountPromise = getLikesCount(post.id);
-              const likedPromise = isAuthenticated && userId ? isPostLikedByUser(post.id, userId): false;
+              const likedPromise =
+                isAuthenticated && userId
+                  ? isPostLikedByUser(post.id, userId)
+                  : false;
               const bookmarkedPromise = post.bookmarked || false; // Retrieve bookmark status
-
 
               const [likesCount, liked] = await Promise.all([
                 likesCountPromise,
@@ -437,7 +426,6 @@ const handleBookmarkToggle = async (index) => {
 
   return (
     <div className="flex flex-col text-white">
-      
       <div className="flex flex-row p-3 items-center">
         <div
           className="flex items-center cursor-pointer"
@@ -458,7 +446,6 @@ const handleBookmarkToggle = async (index) => {
           />
           <div className="mx-4">{username || ""}</div>
         </div>
-
       </div>
 
       <div className="flex flex-col max-w-full gap-5 ">
@@ -609,17 +596,15 @@ const handleBookmarkToggle = async (index) => {
                       </button>
 
                       {/* Bookmark Button */}
-                      <div
-                        onClick={() => handleBookmarkToggle(index)}
-                        className="cursor-pointer hover:text-yellow-500 flex items-center"
-                      >
-                        {post.bookmarked ? (
-                          <BookmarkIcon className="text-yellow-500" />
-                        ) : (
-                          <BookmarkBorderIcon className="gap-3 flex hover:text-gray-500" />
-                        )}
-                      </div>
-                    
+                      <BookmarkToggle
+                        postId={post.id}
+                        initialBookmarked={post.bookmarked} // Pass initial bookmark status if available
+                        onToggle={(status) => {
+                          const updatedPosts = [...posts];
+                          updatedPosts[index].bookmarked = status;
+                          setPosts(updatedPosts);
+                        }}
+                      />
                     </div>
                     <div
                       onClick={() => showCommentPost(index)}
@@ -806,7 +791,7 @@ const handleBookmarkToggle = async (index) => {
               handleComment={(commentText) =>
                 handleComment(currentPostIndex, commentText)
               }
-              updateCommentsForPost={updateCommentsForPost} 
+              updateCommentsForPost={updateCommentsForPost}
             />
           </div>
         </div>
@@ -863,4 +848,3 @@ const handleBookmarkToggle = async (index) => {
 };
 
 export default Bookmark;
-

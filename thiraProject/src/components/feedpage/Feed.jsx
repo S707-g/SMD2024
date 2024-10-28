@@ -2,7 +2,6 @@
 import React, { useState, useContext, useEffect } from "react";
 import { Timestamp } from "firebase/firestore";
 
-
 // Material-UI Components and Icons
 import { Button, TextField } from "@mui/material";
 import MoonLoader from "react-spinners/MoonLoader";
@@ -74,18 +73,40 @@ const Feed = () => {
     }
   };
 
-  
-  
-// Toggle bookmark status for a post
-const handleBookmarkToggle = async (index) => {
-  const updatedPosts = [...posts];
-  const post = updatedPosts[index];
-  post.bookmarked = !post.bookmarked;
+  // Toggle bookmark status for a post
+  const handleBookmarkToggle = async (index) => {
+    const updatedPosts = [...posts];
+    const post = updatedPosts[index];
+    const bookmarksRef = collection(db, "bookmarks");
 
-  // Update bookmark status in Firestore
-  await updatePost(post.id, { bookmarked: post.bookmarked });
-  setPosts(updatedPosts);
-};
+    try {
+      // Query to check if the bookmark already exists
+      const bookmarkQuery = query(
+        bookmarksRef,
+        where("postId", "==", post.id),
+        where("bookmarkedBy", "==", userId)
+      );
+      const querySnapshot = await getDocs(bookmarkQuery);
+
+      if (!querySnapshot.empty) {
+        // Bookmark exists, so remove it
+        const bookmarkDocId = querySnapshot.docs[0].id; // Get the ID of the bookmark document
+        await deleteDoc(doc(db, "bookmarks", bookmarkDocId));
+        post.bookmarked = false; // Update local state
+      } else {
+        // Bookmark doesn't exist, so add it
+        await addDoc(bookmarksRef, {
+          postId: post.id,
+          bookmarkedBy: userId,
+        });
+        post.bookmarked = true; // Update local state
+      }
+
+      setPosts(updatedPosts);
+    } catch (error) {
+      console.error("Error toggling bookmark:", error);
+    }
+  };
 
   const handleImageClick = (url) => {
     setSelectedImage(url); // Set the selected image URL
@@ -357,13 +378,13 @@ const handleBookmarkToggle = async (index) => {
                 postData.profilePic = "/profile.webp";
               }
 
-              
-
               // Fetch likes count and if the current user has liked the post
               const likesCountPromise = getLikesCount(post.id);
-              const likedPromise = isAuthenticated && userId ? isPostLikedByUser(post.id, userId): false;
+              const likedPromise =
+                isAuthenticated && userId
+                  ? isPostLikedByUser(post.id, userId)
+                  : false;
               const bookmarkedPromise = post.bookmarked || false; // Retrieve bookmark status
-
 
               const [likesCount, liked] = await Promise.all([
                 likesCountPromise,
@@ -455,8 +476,8 @@ const handleBookmarkToggle = async (index) => {
           className="flex items-center cursor-pointer"
           onClick={() => {
             if (isAuthenticated) {
-              // Redirect to the profile page if authenticated
-              navigate(`/profile/${post.username}`);
+              // Redirect to the profile page of the authenticated user
+              navigate(`/profile/${username}`);
             } else {
               // Show login modal if not authenticated
               setModalLogin(true);
@@ -637,7 +658,6 @@ const handleBookmarkToggle = async (index) => {
                           <BookmarkBorderIcon className="gap-3 flex hover:text-gray-500" />
                         )}
                       </div>
-                    
                     </div>
                     <div
                       onClick={() => showCommentPost(index)}

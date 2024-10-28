@@ -9,12 +9,6 @@ import { AuthProvider } from "./context/AuthContext.jsx";
 import { NavigationProvider } from "./context/NavigationContext.jsx";
 import Bookmark from "./components/bookmarkPage/Bookmark";
 
-// Wrapper component to provide `navigate` to `AuthProvider`
-function AuthProviderWithNavigate({ children }) {
-  const navigate = useNavigate();
-  return <AuthProvider navigate={navigate}>{children}</AuthProvider>;
-}
-
 function App() {
   return (
     <Router>
