@@ -25,10 +25,12 @@ import {
 } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import AuthContext from "../../context/AuthContext"; // Assuming AuthContext for user state
-
+import Feed from "../feedpage/Feed";
+import { useUpload } from "../../hooks/useUpload";
+import usePosts from "../../hooks/usePost";
 const Profile = () => {
   const { username } = useParams();
-  const { getUserByUsername } = useUser();
+  const { getUserByUsername, getUserById } = useUser();
   const {
     user,
     isAuthenticated,
@@ -42,9 +44,13 @@ const Profile = () => {
   const [newBio, setNewBio] = useState("");
   const [newImage, setNewImage] = useState(null);
   const [previewImage, setPreviewImage] = useState("");
+  const [posts, setPosts] = useState([]);
 
   const navigate = useNavigate();
   const storage = getStorage(); // Initialize Firebase Storage
+
+  const { upload } = useUpload();
+  const {fetchPosts} = usePosts();
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -63,12 +69,40 @@ const Profile = () => {
       }
     };
 
+    fetchPosts()
+      .then((posts) => {
+
+        if(posts){
+          //add user details to posts using getUserById return promise
+          const updatedPosts = posts.map(async (post) => {
+            const user = await getUserById(post.userId);
+            return { ...post, user };
+          })
+          Promise.all(updatedPosts).then((updatedPosts) => {
+
+            //filter by updatedPost filter by .user.username = username
+            const filteredPosts = updatedPosts.filter(
+              (post) => post.user.username === username
+            );
+            setPosts(filteredPosts);
+
+          });
+        }
+        
+      })
+      .catch((error) => {
+        console.error("Error fetching posts:", error);
+      });
+
     fetchUser();
   }, [username, getUserByUsername]);
 
   const updateBio = async () => {
     try {
       const userDoc = doc(db, "users", bio.id);
+      if(previewImage){
+        await updateDoc(userDoc, { profile_url: previewImage});
+      }
       await updateDoc(userDoc, { bio: newBio });
       setUserBio(newBio);
       setEditMode(false);
@@ -78,23 +112,99 @@ const Profile = () => {
     }
   };
 
-  const handleImageChange = (e) => {
+  const handleImageChange = async (e) => {
     const file = e.target.files[0];
-    setNewImage(file);
-    setPreviewImage(URL.createObjectURL(file)); // Preview the uploaded image
-  };
+    
+    // Debug logging
+    console.log('Selected file:', file);
+    
+    if (!file) {
+      console.log('No file selected');
+      return;
+    }
+  
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      console.log('Invalid file type:', file.type);
+      alert('Please select an image file');
+      return;
+    }
+  
+    // Validate file size (5MB limit)
+    const MAX_SIZE = 5 * 1024 * 1024;
+    if (file.size > MAX_SIZE) {
+      console.log('File too large:', file.size);
+      alert('Image must be smaller than 5MB');
+      return;
+    }
 
+    const imgUrl = await upload(file);
+  
+    console.log('File passed validation');
+    setNewImage(file);
+    
+    // Clean up old preview URL
+    if (previewImage) {
+      URL.revokeObjectURL(previewImage);
+    }
+    
+    const newPreviewUrl = URL.createObjectURL(file);
+    console.log('Preview URL created:', imgUrl.data.path);
+    setPreviewImage(imgUrl.data.path);
+  };
+  
   const uploadImage = async () => {
-    if (!newImage) return;
+    if (!newImage || !bio.id) return;
+    
     try {
-      const imageRef = ref(storage, `profile_images/${bio.id}`); // Store by user ID
-      await uploadBytes(imageRef, newImage);
-      const url = await getDownloadURL(imageRef);
-      await updateDoc(doc(db, "users", bio.id), { profile_url: url });
-      setUserImage(url); // Update profile image locally
+      // 1. Create a specific path for the user's profile image
+      const storageRef = ref(storage, `users/${bio.id}/profile`);
+      
+      // 2. Upload the image with metadata
+      const metadata = {
+        contentType: newImage.type
+      };
+      
+      // 3. Upload file
+      const uploadTask = await uploadBytes(storageRef, newImage, metadata);
+      console.log('Upload complete');
+      
+      // 4. Get the download URL immediately after upload
+      const downloadURL = await getDownloadURL(uploadTask.ref);
+      console.log('File available at:', downloadURL);
+  
+      // 5. Update Firestore document
+      const userDocRef = doc(db, "users", bio.id);
+      await updateDoc(userDocRef, {
+        profile_url: downloadURL,
+        updated_at: Timestamp.now()
+      });
+  
+      // 6. Update local state
+      setUserImage(downloadURL);
+      setNewImage(null);
+      
+      // 7. Clean up preview URL
+      if (previewImage) {
+        URL.revokeObjectURL(previewImage);
+      }
+      setPreviewImage(null);
+  
       alert("Profile image updated successfully!");
+  
     } catch (error) {
-      console.error("Error uploading image:", error);
+      console.error("Upload error:", error);
+      
+      // Better error messaging
+      if (error.code === 'storage/unauthorized') {
+        alert("You don't have permission to upload. Please sign in again.");
+      } else if (error.code === 'storage/canceled') {
+        alert("Upload was cancelled. Please try again.");
+      } else if (error.code === 'storage/unknown') {
+        alert("An unknown error occurred. Please try again.");
+      } else {
+        alert("Failed to upload image. Please try again later.");
+      }
     }
   };
 
@@ -145,7 +255,7 @@ const Profile = () => {
     "https://github.com/S707-g/SMD2024/blob/gotinwza/thiraProject/src/components/img/defaultProfile.webp";
 
   return bio ? (
-    <div className="w-full h-full bg-gray-400 p-3">
+    <div className="w-full h-full bg-gray-400 p-3 overflow-y-auto">
       <div className="bg-white p-5 rounded-lg flex-col">
         <Grid container spacing={3} alignItems="center" className="my-5">
           <Grid item xs={12} sm={4} md={3}>
@@ -186,7 +296,7 @@ const Profile = () => {
             )}
           </Grid>
         </Grid>
-
+        
         <Grid container spacing={2} className="mt-8">
           <Grid item>
             {!editMode ? (
@@ -240,7 +350,39 @@ const Profile = () => {
           </Grid>
         </Grid>
       </div>
+      <div className="bg-white p-5 rounded-lg mt-3 h-auto">
+        
+            {/* this user posts */}
+            <div className="flex flex-col gap-2">
+            {
+              posts && posts.map((post) => {
+                return (
+                  <div key={post.id} className="border p-2 border-black flex flex-col">
+                    <div className="flex flex-row">
+                      <img src={post.user.profile_url} alt="Profile Picture" className="w-10 h-10 rounded-full" />
+                      <span>{post.user.username}</span>
+                    </div>
+                    <span>{post.text}</span>
+                    <div className="flex flex-col gap-5">
+                    {post.img_urls && 
+                      post.img_urls.map((img) => {
+                        return (
+                          <img src={img} alt="Post Image" className="w-full h-60 object-cover" />
+                        )
+                      })
+                    }
+                    </div>
+                  </div>
+                )
+              })
+                
+            }
+            </div>
+
+
+      </div>
     </div>
+    
   ) : (
     <>T_T GOT CAN'T FIND THIS USER</>
   );

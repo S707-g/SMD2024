@@ -122,14 +122,6 @@ const NavB = () => {
       <div className="relative flex gap-3">
         <Button
           variant="text"
-          className="!text-white !capitalize !py-2 !px-4 !rounded-full"
-          aria-label="Create"
-        >
-          <AddIcon /> Create
-        </Button>
-
-        <Button
-          variant="text"
           className="!text-white !rounded-full"
           aria-label="Notifications"
         >

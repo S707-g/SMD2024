@@ -1,9 +1,10 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { TextField } from "@mui/material";
 import ImageIcon from "@mui/icons-material/Image";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AuthContext from "../../context/AuthContext";
 import { useUpload } from "../../hooks/useUpload";
+import useUser from "../../hooks/useUser";
 
 const CreatePost = ({ textPostContent, closePost }) => {
   const [localPostContent, setLocalPostContent] = useState("");
@@ -11,6 +12,8 @@ const CreatePost = ({ textPostContent, closePost }) => {
   const [selectedFiles, setSelectedFiles] = useState([]); // Renamed to selectedFiles
   const { username, profilePic } = useContext(AuthContext);
   const { upload } = useUpload();
+  const { getUserByUsername } = useUser();
+  const [userProfilePic, setUserProfilePic] = useState("");
 
   const handleInputChange = (event) => {
     setLocalPostContent(event.target.value); // Update local input state
@@ -19,6 +22,19 @@ const CreatePost = ({ textPostContent, closePost }) => {
   const handleShowInputImageClicked = () => {
     setShowInputImage(true);
   };
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (username) {
+        const userDoc = await getUserByUsername(username);
+        if (userDoc && userDoc.profile_url) {
+          setUserProfilePic(userDoc.profile_url);
+        }
+      }
+    };
+
+    fetchUserProfile();
+  }, [username, getUserByUsername]);
 
   const handlePostClick = () => {
     if (localPostContent.trim() || selectedFiles.length > 0) {
@@ -54,7 +70,11 @@ const CreatePost = ({ textPostContent, closePost }) => {
 
       {/* Profile and Privacy Setting */}
       <div className="flex items-center space-x-2 p-4 m-4 justify-start w-full">
-        <img src={profilePic} alt="Profile" className="rounded-full" />
+        <img
+          src={userProfilePic}
+          alt={`${username}'s profile`}
+          className="w-10 h-10 rounded-full mr-2"
+        />
         <div>
           <div className="font-semibold">{username}</div>
           <div className="text-sm text-gray-500"></div>
