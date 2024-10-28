@@ -255,8 +255,8 @@ const Profile = () => {
     "https://github.com/S707-g/SMD2024/blob/gotinwza/thiraProject/src/components/img/defaultProfile.webp";
 
   return bio ? (
-    <div className="w-full h-full bg-gray-400 p-3 overflow-y-auto">
-      <div className="bg-white p-5 rounded-lg flex-col">
+    <div className="text-white w-full h-full pt-3 pr-3 overflow-y-auto hide-scrollbar">  
+      <div className="bg-[#153549] p-5 rounded-lg flex-col">
         <Grid container spacing={3} alignItems="center" className="my-5">
           <Grid item xs={12} sm={4} md={3}>
             <Avatar
@@ -280,7 +280,7 @@ const Profile = () => {
               {username}
             </Typography>
             {!editMode ? (
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              <Typography variant="body2" color="white" sx={{ mt: 1 }}>
                 {userBio || "No bio available."}
               </Typography>
             ) : (
@@ -310,7 +310,7 @@ const Profile = () => {
                       setEditMode(true);
                       setNewBio(userBio);
                     }}
-                    className="!bg-gray-500 !text-white !rounded-full !py-2 !px-4 !hover:bg-white !hover:text-gray-700"
+                    className="!bg-[#6BADD5] !text-white !rounded-full !py-2 !px-4 !hover:bg-white !hover:text-gray-700"
                   >
                     Edit Profile
                   </Button>
@@ -350,24 +350,24 @@ const Profile = () => {
           </Grid>
         </Grid>
       </div>
-      <div className="bg-white p-5 rounded-lg mt-3 h-auto">
+      <div className="rounded-lg mt-3 h-auto overflow-auto">
         
-            {/* this user posts */}
-            <div className="flex flex-col gap-2">
+          {/* this user posts */}
+          <div className="flex flex-col gap-[20px]">
             {
               posts && posts.map((post) => {
                 return (
-                  <div key={post.id} className="border p-2 border-black flex flex-col">
+                  <div key={post.id} className="text-white border-2 p-4 bg-[#203B50] border-black flex flex-col rounded-xl">
                     <div className="flex flex-row">
-                      <img src={post.user.profile_url} alt="Profile Picture" className="w-10 h-10 rounded-full" />
-                      <span>{post.user.username}</span>
+                      <img src={post.user.profile_url} alt="Profile Picture" className="w-10 h-10 rounded-full mr-5 mb-5" />
+                      <span className="font-bold text-[18px]">{post.user.username}</span>
                     </div>
-                    <span>{post.text}</span>
+                    <span className="mb-1">{post.text}</span>
                     <div className="flex flex-col gap-5">
                     {post.img_urls && 
                       post.img_urls.map((img) => {
                         return (
-                          <img src={img} alt="Post Image" className="w-full h-60 object-cover" />
+                          <img src={img} alt="Post Image" className="w-full h-auto object-cover" />
                         )
                       })
                     }
@@ -377,9 +377,7 @@ const Profile = () => {
               })
                 
             }
-            </div>
-
-
+          </div>
       </div>
     </div>
     
