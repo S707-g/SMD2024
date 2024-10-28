@@ -50,7 +50,7 @@ const Feed = () => {
   const navigate = useNavigate();
 
   const { getUserByUsername, getUserById } = useUser();
-  const { addPost, fetchPosts, deletePost, updatePost } = usePosts();
+  const { fetchBookmarkedPosts, addPost, fetchPosts, deletePost, updatePost } = usePosts();
   const { addPostToHiddenPosts, getHiddenPosts } = useHiddenPosts();
   const { togglePostBookmark } = useBookmark()
   const {
@@ -342,78 +342,76 @@ const Feed = () => {
     if (isLoaded) return;
 
     const loadPosts = async () => {
-      try {
-        let hiddenPosts = [];
-        if (isAuthenticated && userId) {
-          hiddenPosts = await getHiddenPosts(userId);
-        }
+  try {
+    let hiddenPosts = [];
+    if (isAuthenticated && userId) {
+      hiddenPosts = await getHiddenPosts(userId);
+    }
 
-        const data = await fetchPosts();
-        if (data && data?.length > 0) {
-          const postPromises = data
-            .filter((post) => !hiddenPosts.includes(post.id)) // Exclude hidden posts
-            .map(async (post) => {
-              const postData = { ...post };
+    // Fetch bookmarked post IDs
+    const bookmarkedPosts = await fetchBookmarkedPosts(userId);
+    const bookmarkedIds = bookmarkedPosts.map(bookmark => bookmark.postId);
 
-              // Fetch user data
-              if (post.userId) {
-                const user = await getUserById(post.userId);
-                postData.username = user?.username || "Unknown User";
-                postData.profilePic = user?.profile_url || "/profile.webp";
-              } else {
-                postData.username = "Unknown User";
-                postData.profilePic = "/profile.webp";
-              }
+    const data = await fetchPosts();
+    if (data && data.length > 0) {
+      const postPromises = data
+        .filter((post) => !hiddenPosts.includes(post.id)) // Exclude hidden posts
+        .map(async (post) => {
+          const postData = { ...post };
 
-              // Fetch likes count and if the current user has liked the post
-              const likesCountPromise = getLikesCount(post.id);
-              const likedPromise =
-                isAuthenticated && userId
-                  ? isPostLikedByUser(post.id, userId)
-                  : false;
-              const bookmarkedPromise = post.bookmarked || false; // Retrieve bookmark status
+          // Set bookmarked status based on the bookmarkedIds array
+          postData.bookmarked = bookmarkedIds.includes(post.id);
 
-              const [likesCount, liked] = await Promise.all([
-                likesCountPromise,
-                likedPromise,
-              ]);
-              postData.likesCount = likesCount;
-              postData.liked = liked;
-              postData.bookmarked = bookmarkedPromise;
+          // Fetch user data
+          if (post.userId) {
+            const user = await getUserById(post.userId);
+            postData.username = user?.username || "Unknown User";
+            postData.profilePic = user?.profile_url || "/profile.webp";
+          } else {
+            postData.username = "Unknown User";
+            postData.profilePic = "/profile.webp";
+          }
 
-              // Fetch comments for the post
-              const comments = await fetchCommentsForPost(post.id);
-              postData.comments = comments || [];
+          // Fetch likes count and if the current user has liked the post
+          const likesCountPromise = getLikesCount(post.id);
+          const likedPromise =
+            isAuthenticated && userId
+              ? isPostLikedByUser(post.id, userId)
+              : false;
 
-              // Convert Firestore Timestamp to JavaScript Date
-              postData.createdAt = post.createdAt?.toDate;
-              if (post.createdAt && post.createdAt.toDate) {
-                // Firestore Timestamp object
-                postData.createdAt = post.createdAt.toDate();
-              } else if (post.createdAt) {
-                // Already a Date object or ISO string
-                postData.createdAt = new Date(post.createdAt);
-              } else {
-                // Fallback to current date or handle missing date
-                postData.createdAt = new Date();
-              }
+          const [likesCount, liked] = await Promise.all([
+            likesCountPromise,
+            likedPromise,
+          ]);
+          postData.likesCount = likesCount;
+          postData.liked = liked;
 
-              // Initialize and commentInput
-              postData.commentInput = "";
+          // Fetch comments for the post
+          const comments = await fetchCommentsForPost(post.id);
+          postData.comments = comments || [];
 
-              return postData;
-            });
+          // Convert Firestore Timestamp to JavaScript Date
+          postData.createdAt = post.createdAt?.toDate
+            ? post.createdAt.toDate()
+            : new Date(post.createdAt || Date.now());
 
-          const postsData = await Promise.all(postPromises);
-          setPosts(postsData);
-          setIsLoaded(true);
-        } else {
-          console.error("No posts found");
-        }
-      } catch (error) {
-        console.error("Error fetching posts:", error);
-      }
-    };
+          // Initialize comment input
+          postData.commentInput = "";
+
+          return postData;
+        });
+
+      const postsData = await Promise.all(postPromises);
+      setPosts(postsData);
+      setIsLoaded(true);
+    } else {
+      console.error("No posts found");
+    }
+  } catch (error) {
+    console.error("Error fetching posts:", error);
+  }
+};
+
 
     loadPosts();
   }, [isLoaded, isAuthenticated, userId, fetchPosts, getUserById]);
