@@ -150,7 +150,7 @@ const SideBarLeft = ({ onLogout }) => {
       {/* Top Section */}
       <div>
         <NavButton Icon={HomeIcon} label="Home" onClick={handleHomeClick} />
-        <NavButton Icon={PeopleIcon} label="Friends" />
+        <NavButton Icon={PeopleIcon} label="Friends" onClick={() => navigate("/friends")} />
         <NavButton
           Icon={BookmarkIcon}
           label="Bookmarks"
