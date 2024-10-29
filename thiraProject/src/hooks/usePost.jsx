@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import {
+  where,
   collection,
   getDocs,
   addDoc,
@@ -19,9 +20,16 @@ const usePosts = () => {
 
   // Fetch all posts
   useEffect(() => {
-    fetchPosts();
-  }, []);
+    const loadPosts = async () => {
+      setLoading(true);
+      const data = await fetchPosts();
+      setPosts(data);
+      setLoading(false);
+    };
 
+    loadPosts();
+  }, []);
+  
   const fetchPosts = async () => {
     try {
       const postsRef = collection(db, "posts");
@@ -37,6 +45,24 @@ const usePosts = () => {
       return [];
     }
   };
+
+  const fetchBookmarkedPosts = async (userId) => {
+    try {
+      const bookmarksRef = collection(db, "bookmarks");
+      const q = query(bookmarksRef, where("bookmarkedBy", "==", userId));
+      const querySnapshot = await getDocs(q);
+      console.log("Fetched bookmarked posts:", querySnapshot.docs.map(doc => doc.data()));
+      return querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+    } catch (error) {
+      console.error("Error fetching bookmarked posts:", error);
+      setError(error);
+      return [];
+    }
+  };
+  
 
   // Add a new post
   const addPost = async (newPost) => {
@@ -99,6 +125,7 @@ const usePosts = () => {
     deletePost,
     updatePost,
     fetchPosts,
+    fetchBookmarkedPosts,
   };
 };
 

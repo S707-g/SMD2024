@@ -38,6 +38,7 @@ const ChatWindow = () => {
   const emojiPickerRef = useRef(null);
   const navigate = useNavigate();
   const lastMessageRef = useRef(null);
+  const [messageProfiles, setMessageProfiles] = useState({});
 
   // Fetch messages when chatId changes
   useEffect(() => {
@@ -64,6 +65,23 @@ const ChatWindow = () => {
       fetchOtherUser();
     }
   }, [chatId, userId, getUserById]);
+
+  // Fetch user profiles for each message sender
+  useEffect(() => {
+    const fetchMessageProfiles = async () => {
+      const profiles = {};
+      for (const message of messages) {
+        if (!profiles[message.senderId]) {
+          profiles[message.senderId] = await getUserById(message.senderId);
+        }
+      }
+      setMessageProfiles(profiles);
+    };
+
+    if (messages.length > 0) {
+      fetchMessageProfiles();
+    }
+  }, [messages, getUserById]);
 
   // Handle clicks outside the emoji picker to close it
   useEffect(() => {
@@ -173,14 +191,14 @@ const ChatWindow = () => {
     <div className="flex flex-col h-full bg-gray-900">
       {/* Header */}
       <div className="flex items-center justify-between p-4 bg-gray-900 sticky top-0 z-10 w-full">
-        <div className="flex items-center">
+        <div
+          className="flex items-center cursor-pointer  "
+          onClick={() => handleProfileClick(otherUser?.id, otherUser?.username)}
+        >
           <Avatar
             src={otherUser?.profile_url || "/defaultProfile.webp"}
-            alt="User Avatar"
+            alt={otherUser?.username || "User"}
             className="mr-3 cursor-pointer"
-            onClick={() =>
-              handleProfileClick(otherUser?.id, otherUser?.username)
-            }
           />
           <div>
             <h2 className="text-lg font-semibold text-white">
@@ -196,6 +214,7 @@ const ChatWindow = () => {
           {messages.length > 0 ? (
             messages.map((message, index) => {
               const isOwnMessage = message.senderId === userId;
+              const senderProfile = messageProfiles[message.senderId];
               const isLastMessage = index === messages.length - 1;
               return (
                 <div
@@ -221,16 +240,14 @@ const ChatWindow = () => {
                     >
                       <Avatar
                         src={
-                          isOwnMessage
-                            ? "/myAvatar.png"
-                            : otherUser?.profile_url || "/defaultProfile.webp"
+                          senderProfile?.profile_url || "/defaultProfile.webp"
                         }
-                        alt="User Avatar"
+                        alt={senderProfile?.username || "User"}
                         className="w-10 h-10 sm:w-8 sm:h-8 cursor-pointer"
                         onClick={() =>
                           handleProfileClick(
-                            isOwnMessage ? userId : otherUser?.id,
-                            isOwnMessage ? currentUsername : otherUser?.username
+                            message.senderId,
+                            senderProfile?.username
                           )
                         }
                       />

@@ -1,6 +1,7 @@
 // React and Firebase
 import React, { useState, useContext, useEffect } from "react";
-import { Timestamp } from "firebase/firestore";
+import { doc, getDoc, Timestamp } from "firebase/firestore";
+import db from "../../database/FirebaseConfig";
 
 // Material-UI Components and Icons
 import { Button, TextField } from "@mui/material";
@@ -19,10 +20,10 @@ import BookmarkIcon from "@mui/icons-material/Bookmark";
 import { formatDistanceToNow } from "date-fns";
 
 // Custom Components
-import CreatePost from "./CreatePost";
-import ModalPost from "./ModalPost";
+import CreatePost from "../feedpage/CreatePost";
+import ModalPost from "../feedpage/ModalPost";
 import Login from "../layout/login/Login";
-import EditPost from "./Editpost";
+import EditPost from "../feedpage/Editpost";
 
 // Context and Hooks
 import AuthContext from "../../context/AuthContext";
@@ -33,7 +34,7 @@ import useComments from "../../hooks/useComments";
 import useHiddenPosts from "../../hooks/useHiddenPosts";
 import useBookmark from "../../hooks/useBookmark";
 
-const Feed = () => {
+const Bookmarks = () => {
   const { isAuthenticated, login, username, userId } = useContext(AuthContext);
   const [showCreatePost, setShowCreatePost] = useState(false);
   const [showModalPost, setShowModalPost] = useState(false);
@@ -46,13 +47,13 @@ const Feed = () => {
   const [moreOptionsVisible, setMoreOptionsVisible] = useState({});
   const [currentPostIndex, setCurrentPostIndex] = useState(null);
   const [commentsVisibility, setCommentsVisibility] = useState({});
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   const { getUserByUsername, getUserById } = useUser();
-  const { fetchBookmarkedPosts, addPost, fetchPosts, deletePost, updatePost } = usePosts();
+  const { fetchBookmarkedPosts, deletePost, updatePost, getPost } = usePosts();
   const { addPostToHiddenPosts, getHiddenPosts } = useHiddenPosts();
-  const { togglePostBookmark } = useBookmark()
+  const { togglePostBookmark } = useBookmark();
   const {
     isPostLikedByUser,
     likePost,
@@ -81,17 +82,23 @@ const Feed = () => {
       setModalLogin(true);
       return;
     }
-  
+
     const updatedPosts = [...posts];
     const post = updatedPosts[index];
-  
+
     const isBookmarked = await togglePostBookmark(post.id, userId);
-  
+
     if (isBookmarked !== null) {
-      post.bookmarked = isBookmarked;
-      setPosts(updatedPosts);
+      const newPosts = updatedPosts.filter((_, i) => i !== index);
+      setPosts(newPosts);
     } else {
       console.error("Failed to toggle bookmark for post:", post.id);
+    }
+
+    if (!isBookmarked) {
+      // If post is unbookmarked, remove it from local state
+      updatedPosts.splice(index, 1);
+      setPosts(updatedPosts);
     }
   };
 
@@ -339,82 +346,79 @@ const Feed = () => {
   }, [username, getUserByUsername]);
 
   useEffect(() => {
-    if (isLoaded) return;
+    const loadBookmarkedPosts = async () => {
+      if (!loading) {
+        setLoading(true);
+      }
+      try {
+        // Fetch bookmarked posts for the user
+        const data = await fetchBookmarkedPosts(userId);
+        if (data && data.length > 0) {
+          const postPromises = data.map(async (bookmark) => {
+            const post = await getPost(bookmark.postId); // Fetch post by postId
 
-    const loadPosts = async () => {
-  try {
-    let hiddenPosts = [];
-    if (isAuthenticated && userId) {
-      hiddenPosts = await getHiddenPosts(userId);
+            if (!post) return null; // Handle missing posts gracefully
+
+            const postData = { ...post };
+
+            // Fetch user data for each post
+            if (post.userId) {
+              const user = await getUserById(post.userId);
+              postData.username = user?.username || "Unknown User";
+              postData.profilePic = user?.profile_url || "/profile.webp";
+            } else {
+              postData.username = "Unknown User";
+              postData.profilePic = "/profile.webp";
+            }
+
+            // Fetch likes count and bookmark status
+            const likesCountPromise = getLikesCount(post.id);
+            const likedPromise =
+              isAuthenticated && userId
+                ? isPostLikedByUser(post.id, userId)
+                : false;
+            const bookmarkedPromise = true; // Since it's bookmarked, set as true
+
+            const [likesCount, liked] = await Promise.all([
+              likesCountPromise,
+              likedPromise,
+            ]);
+            postData.likesCount = likesCount;
+            postData.liked = liked;
+            postData.bookmarked = bookmarkedPromise;
+
+            // Fetch comments for the post
+            const comments = await fetchCommentsForPost(post.id);
+            postData.comments = comments || [];
+
+            // Handle createdAt timestamp
+            postData.createdAt =
+              post.createdAt?.toDate() ||
+              new Date(post.createdAt) ||
+              new Date();
+
+            // Initialize commentInput field
+            postData.commentInput = "";
+
+            return postData;
+          });
+
+          const postsData = (await Promise.all(postPromises)).filter(Boolean);
+          setPosts(postsData);
+        } else {
+          setPosts([]);
+        }
+      } catch (error) {
+        console.error("Error fetching bookmarked posts:", error);
+      } finally {
+        setLoading(false); // Set loading to false once fetching completes
+      }
+    };
+
+    if (loading) {
+      loadBookmarkedPosts();
     }
-
-    // Fetch bookmarked post IDs
-    const bookmarkedPosts = await fetchBookmarkedPosts(userId);
-    const bookmarkedIds = bookmarkedPosts.map(bookmark => bookmark.postId);
-
-    const data = await fetchPosts();
-    if (data && data.length > 0) {
-      const postPromises = data
-        .filter((post) => !hiddenPosts.includes(post.id)) // Exclude hidden posts
-        .map(async (post) => {
-          const postData = { ...post };
-
-          // Set bookmarked status based on the bookmarkedIds array
-          postData.bookmarked = bookmarkedIds.includes(post.id);
-
-          // Fetch user data
-          if (post.userId) {
-            const user = await getUserById(post.userId);
-            postData.username = user?.username || "Unknown User";
-            postData.profilePic = user?.profile_url || "/profile.webp";
-          } else {
-            postData.username = "Unknown User";
-            postData.profilePic = "/profile.webp";
-          }
-
-          // Fetch likes count and if the current user has liked the post
-          const likesCountPromise = getLikesCount(post.id);
-          const likedPromise =
-            isAuthenticated && userId
-              ? isPostLikedByUser(post.id, userId)
-              : false;
-
-          const [likesCount, liked] = await Promise.all([
-            likesCountPromise,
-            likedPromise,
-          ]);
-          postData.likesCount = likesCount;
-          postData.liked = liked;
-
-          // Fetch comments for the post
-          const comments = await fetchCommentsForPost(post.id);
-          postData.comments = comments || [];
-
-          // Convert Firestore Timestamp to JavaScript Date
-          postData.createdAt = post.createdAt?.toDate
-            ? post.createdAt.toDate()
-            : new Date(post.createdAt || Date.now());
-
-          // Initialize comment input
-          postData.commentInput = "";
-
-          return postData;
-        });
-
-      const postsData = await Promise.all(postPromises);
-      setPosts(postsData);
-      setIsLoaded(true);
-    } else {
-      console.error("No posts found");
-    }
-  } catch (error) {
-    console.error("Error fetching posts:", error);
-  }
-};
-
-
-    loadPosts();
-  }, [isLoaded, isAuthenticated, userId, fetchPosts, getUserById]);
+  },[userId, loading]);
 
   const addNewPost = async (newPostContent, newImageContents) => {
     let imageUrls = [];
@@ -456,37 +460,12 @@ const Feed = () => {
 
   return (
     <div className="flex flex-col text-white h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-900">
-      <div className="flex flex-row p-3 items-center">
-        <div
-          className="flex items-center cursor-pointer"
-          onClick={() => {
-            if (isAuthenticated) {
-              // Redirect to the profile page of the authenticated user
-              navigate(`/profile/${username}`);
-            } else {
-              // Show login modal if not authenticated
-              setModalLogin(true);
-            }
-          }}
-        >
-          <img
-            src={userProfilePic}
-            alt={`${username}'s profile`}
-            className="w-10 h-10 rounded-full mr-2"
-          />
-          <div className="mx-4">{username || ""}</div>
-        </div>
-
-        <Button
-          onClick={handleCreatePost}
-          className="!rounded-2xl flex-1 !bg-gray-700 !text-white !text-start hover:!bg-gray-600"
-        >
-          Post Here
-        </Button>
-      </div>
-
       <div className="flex flex-col max-w-full gap-5 ">
-        {posts?.length > 0 ? (
+        {loading ? (
+          <div className="flex justify-center h-full items-center mt-10 pt-44">
+            <MoonLoader color="#ffffff" size={100} />
+          </div>
+        ) : posts?.length > 0 ? (
           posts.map((post, index) => (
             <div
               key={index}
@@ -519,7 +498,7 @@ const Feed = () => {
                       </div>
                       <div className="text-sm text-gray-400">
                         {post.createdAt
-                          ? formatDistanceToNow(post.createdAt, {
+                          ? formatDistanceToNow(new Date(post.createdAt), {
                               addSuffix: true,
                             })
                           : "Just now"}
@@ -648,7 +627,7 @@ const Feed = () => {
                       onClick={() => showCommentPost(index)}
                       className="cursor-pointer"
                     >
-                      {post.comments.length > 0 && (
+                      {post.comments && post.comments.length > 0 && (
                         <div>
                           {post.comments.length}{" "}
                           {post.comments.length === 1 ? "comment" : "comments"}
@@ -683,8 +662,9 @@ const Feed = () => {
                                   {comment.username}
                                 </div>
                                 <div className="text-xs text-gray-400">
-                                  {comment.createdAt instanceof Date &&
-                                  !isNaN(comment.createdAt)
+                                  {comment.createdAt &&
+                                  comment.createdAt instanceof Date &&
+                                  !isNaN(comment.createdAt.getTime())
                                     ? formatDistanceToNow(comment.createdAt, {
                                         addSuffix: true,
                                       })
@@ -777,8 +757,13 @@ const Feed = () => {
             </div>
           ))
         ) : (
-          <div className="flex justify-center h-full items-center mt-10 pt-44">
-            <MoonLoader color="#ffffff" size={100} />
+          <div className="p-6 bg-gray-900 min-h-screen">
+            <h2 className="text-3xl font-semibold text-white mb-6">
+              Your Bookmarks
+            </h2>
+            <p className="MuiTypography-root MuiTypography-body1 text-gray-400 css-1edfpdg-MuiTypography-root">
+              You have no bookmarks yet.
+            </p>
           </div>
         )}
       </div>
@@ -908,4 +893,4 @@ const Feed = () => {
   );
 };
 
-export default Feed;
+export default Bookmarks;
