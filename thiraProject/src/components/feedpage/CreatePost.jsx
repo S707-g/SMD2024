@@ -134,25 +134,27 @@ const CreatePost = ({ textPostContent, closePost }) => {
           </label>
 
           {/* Image Previews */}
-          {selectedFiles.length > 0 && (
-            <div className="mt-4 grid grid-cols-2 gap-4">
-              {selectedFiles.map((file, index) => (
-                <div key={index} className="relative">
-                  <img
-                    src={file}
-                    alt={`Preview ${index + 1}`}
-                    className="w-40 h-40 object-cover rounded-md"
-                  />
-                  <button
-                    onClick={() => handleRemoveImage(index)}
-                    className="absolute top-2 right-2 bg-gray-800 text-white rounded-full p-1"
-                  >
-                    <DeleteIcon />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+          <div className="flex overflow-y-auto max-h-[300px] scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-900">
+            {selectedFiles.length > 0 && (
+              <div className="mt-4 grid grid-cols-2 gap-4 over">
+                {selectedFiles.map((file, index) => (
+                  <div key={index} className="relative">
+                    <img
+                      src={file}
+                      alt={`Preview ${index + 1}`}
+                      className="w-40 h-40 object-cover rounded-md"
+                    />
+                    <button
+                      onClick={() => handleRemoveImage(index)}
+                      className="absolute top-2 right-2 bg-gray-800 text-white rounded-full p-1"
+                    >
+                      <DeleteIcon />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 

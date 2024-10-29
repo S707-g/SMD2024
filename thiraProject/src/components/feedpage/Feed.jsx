@@ -493,7 +493,7 @@ const Feed = () => {
               className="border border-gray-400 rounded-lg shadow-md p-4 mb-2 bg-gray-800"
               style={{ overflowWrap: "break-word", wordBreak: "break-word" }}
             >
-              <div className="flex flex-col">
+              <div className="flex flex-col max-w-[1000px]">
                 {/* Post Header */}
                 <div className="flex items-center mb-2">
                   <div
