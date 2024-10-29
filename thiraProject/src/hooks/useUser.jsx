@@ -17,7 +17,7 @@ const auth = getAuth();
 
 const useUser = () => {
   const [users, setUsers] = useState([]);
-  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -132,6 +132,18 @@ const useUser = () => {
     }
   };
 
+  const fetchFriends = async (userId) => {
+    try {
+      const friendsCollection = collection(db, "friends");
+      const q = query(friendsCollection, where("userId", "==", userId));
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+      console.error("Error fetching friends:", error);
+      return [];
+    }
+  };
+
   const signOutUser = async () => {
     try {
       await signOut(auth);
@@ -178,6 +190,7 @@ const useUser = () => {
     getUserByUsername,
     getUsernamesByPartialMatch,
     fetchAllUsers,
+    fetchFriends,
   };
 };
 
