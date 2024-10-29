@@ -4,13 +4,13 @@ import { getFirestore } from "firebase/firestore";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyCRtkR2HjpPHO8P6EB6P1YlJqQOYSnFbo4",
-  authDomain: "socialmedia-23b9b.firebaseapp.com",
-  projectId: "socialmedia-23b9b",
-  storageBucket: "socialmedia-23b9b.appspot.com",
-  messagingSenderId: "453909279920",
-  appId: "1:453909279920:web:f480c3c0279437563ef775",
-  measurementId: "G-E8HXQV3KNR",
+  apiKey: "AIzaSyDjRQeabBGRVY7Z8vV0jhSKl7oV8QSve3w",
+  authDomain: "todol-bde54.firebaseapp.com",
+  projectId: "todol-bde54",
+  storageBucket: "todol-bde54.appspot.com",
+  messagingSenderId: "994632105855",
+  appId: "1:994632105855:web:e81e5490d46d9880aba44a",
+  measurementId: "G-J8QP14F5SB",
 };
 
 // Main DataBase
