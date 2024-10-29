@@ -21,6 +21,11 @@ const useUser = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const handleError = (err, message) => {
+    console.error(message, err);
+    setError(message);
+  };
+  
   // Listen for authentication state changes and fetch user data
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -41,6 +46,19 @@ const useUser = () => {
 
     return () => unsubscribe();
   }, []);
+
+  const fetchAllUsers = useCallback(async () => {
+    try {
+      const usersCollection = collection(db, "users"); // adjust the collection name if needed
+      const querySnapshot = await getDocs(usersCollection);
+      return querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    } catch (err) {
+      handleError(err, "Error fetching all users");
+      return [];
+    }
+  }, []);
+  
+  
 
   const getUserById = useCallback(async (userId) => {
     const cachedUser = users.find((user) => user.id === userId);
@@ -159,6 +177,7 @@ const useUser = () => {
     signOutUser,
     getUserByUsername,
     getUsernamesByPartialMatch,
+    fetchAllUsers,
   };
 };
 

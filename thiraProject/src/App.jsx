@@ -7,6 +7,8 @@ import ChatList from "./components/Chat/ChatList.jsx";
 import ChatWindow from "./components/Chat/ChatWindow.jsx";
 import { AuthProvider } from "./context/AuthContext.jsx";
 import { NavigationProvider } from "./context/NavigationContext.jsx";
+import Bookmark from "./components/bookmarkPage/Bookmark";
+import FriendsPage from "./components/feedpage/Friend/Friends.jsx";
 
 function App() {
   return (
@@ -16,6 +18,8 @@ function App() {
           <Routes>
             <Route path="/" element={<Layout />}>
               <Route path="/" element={<Feed />} />
+              <Route path="/friends" element={<FriendsPage />} />
+              <Route path="bookmarks" element={<Bookmark />} />
               <Route path="/chat" element={<ChatList />} />
               <Route path="/chat/:chatId" element={<ChatWindow />} />
               <Route path="/profile/:username" element={<Profile />} />
