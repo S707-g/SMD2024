@@ -2,34 +2,37 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 
-// Your web app's Firebase configuration
+// Firebase configuration from Vite environment variables
+// Define variables in .env or .env.local with the VITE_ prefix so Vite exposes them.
 const firebaseConfig = {
-  apiKey: "AIzaSyCRtkR2HjpPHO8P6EB6P1YlJqQOYSnFbo4",
-  authDomain: "socialmedia-23b9b.firebaseapp.com",
-  projectId: "socialmedia-23b9b",
-  storageBucket: "socialmedia-23b9b.appspot.com",
-  messagingSenderId: "453909279920",
-  appId: "1:453909279920:web:f480c3c0279437563ef775",
-  measurementId: "G-E8HXQV3KNR",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
-// Main DataBase
-// apiKey: "AIzaSyCRtkR2HjpPHO8P6EB6P1YlJqQOYSnFbo4",
-// authDomain: "socialmedia-23b9b.firebaseapp.com",
-// projectId: "socialmedia-23b9b",
-// storageBucket: "socialmedia-23b9b.appspot.com",
-// messagingSenderId: "453909279920",
-// appId: "1:453909279920:web:f480c3c0279437563ef775",
-// measurementId: "G-E8HXQV3KNR",
-
-//  BackUp DataBase
-//   apiKey:"AIzaSyDJVvaKFgl8gWju7ooodfn5918vmirYyXE",
-//   authDomain: "postandlike-35031.firebaseapp.com",
-//   projectId: "postandlike-35031",
-//   storageBucket: "postandlike-35031.appspot.com",
-//   messagingSenderId: "935404166455",
-//   appId: "1:935404166455:web:728656020c43b738678eb2",
-//   measurementId: "G-H3LY1SG32L"
+// Light validation to help during local setup
+(() => {
+  const required = [
+    ["VITE_FIREBASE_API_KEY", firebaseConfig.apiKey],
+    ["VITE_FIREBASE_AUTH_DOMAIN", firebaseConfig.authDomain],
+    ["VITE_FIREBASE_PROJECT_ID", firebaseConfig.projectId],
+    ["VITE_FIREBASE_STORAGE_BUCKET", firebaseConfig.storageBucket],
+    ["VITE_FIREBASE_MESSAGING_SENDER_ID", firebaseConfig.messagingSenderId],
+    ["VITE_FIREBASE_APP_ID", firebaseConfig.appId],
+  ];
+  const missing = required.filter(([_, v]) => !v).map(([k]) => k);
+  if (missing.length) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      `Missing Firebase env vars: ${missing.join(", ")}. ` +
+        "Create a .env.local from .env.example and restart the dev server."
+    );
+  }
+})();
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
@@ -37,3 +40,5 @@ const db = getFirestore(app);
 
 // Export the Firestore instance as the default export
 export default db;
+// Optional named export of the initialized app if needed elsewhere
+export { app };
